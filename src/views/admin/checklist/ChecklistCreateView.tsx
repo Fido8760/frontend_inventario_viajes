@@ -33,8 +33,8 @@ export default function ChecklistCreateView() {
             toast.error(error.message)
         },
         onSuccess: (data) => {
-            toast.success(data)
-            navigate('/')
+            toast.success(data.message)
+            navigate(`/asignacion/${asignacionId}/createChecklist/${data.id}`)
         }
     })
 

@@ -20,7 +20,6 @@ export default function LoginView() {
             toast.error(error.message)
         },
         onSuccess: () => {
-            toast.success('Inciando sesión')
             navigate('/')
         }
     })

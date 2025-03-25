@@ -11,6 +11,17 @@ export const authSchema = z.object({
 export type Auth = z.infer<typeof authSchema>
 export type UserLoginForm = Pick<Auth, 'email' | 'password'>
 
+/** Users  */
+
+export const userSchema = authSchema.pick({
+  name: true,
+  email: true
+}).extend({
+  id: z.number()
+})
+
+export type User = z.infer<typeof userSchema>
+
 /** Asignacion */
 export const usuarioSchema = z.object({
     name: z.string()
@@ -149,3 +160,18 @@ export const generateFormSchema = (data: PreguntasData) =>
   )
 
 export type FormValues = z.infer<ReturnType<typeof generateFormSchema>>
+
+/** Imagenes */
+
+export const checklistImageSchema = z.object({
+  frontal: z.any().refine((file) => file instanceof File, { message: "La foto frontal es requerida" }),
+});
+
+export type ChecklistImageData = z.infer<typeof checklistImageSchema>;
+
+export const uploadImageResponseSchema = z.object({
+  message: z.string(),
+  imageUrl: z.string().url(),
+});
+
+export type UploadImageResponse = z.infer<typeof uploadImageResponseSchema>;

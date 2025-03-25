@@ -1,6 +1,6 @@
 import { isAxiosError } from "axios";
 import api from "../lib/axios";
-import { QuestionType } from "../types";
+import { QuestionType, UploadImageResponse, uploadImageResponseSchema } from "../types";
 
 /** Checklist */
 
@@ -18,20 +18,39 @@ export type ChecklistAPI = {
   };
 export async function postChecklist({formData, asignacionId}: Pick<ChecklistAPI, 'asignacionId' | 'formData'>) {
 
-    console.log(formData)
-    const token = localStorage.getItem("AUTH_TOKEN");
     const url = `/assignments/${asignacionId}/checklist`
     try {
-        const { data } = await api.post<string>(url, formData, {
-            headers: {
-                Authorization: `Bearer ${token}`,
-            },
-        });
-
+        const { data } = await api.post(url, formData);
         return data;
+        
     } catch (error) {
         if (isAxiosError(error) && error.response) {
             throw new Error(error.response.data.error);
         }
     }
+}
+
+export type ChecklistImageAPI = {
+    file: File;
+    asignacionId: number
+    checklistId: number
+    fieldId: string
+}
+
+export async function uploadImage({file, asignacionId, checklistId}: ChecklistImageAPI) {
+  let formData = new FormData()
+  formData.append('file', file)
+  const url = `/assignments/${asignacionId}/checklist/${checklistId}/image`;
+
+  try {
+    const { data } = await api.post<UploadImageResponse>(url, formData)
+    const result = uploadImageResponseSchema.parse(data)
+    return result
+    
+  } catch (error) {
+    if (isAxiosError(error) && error.response) {
+      throw new Error(error.response.data.error);
+    }
+    throw new Error("Error desconocido al subir la imagen");
+  }
 }

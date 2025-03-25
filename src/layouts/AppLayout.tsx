@@ -1,10 +1,15 @@
-import { Link, Outlet } from "react-router-dom";
+import { Link, Navigate, Outlet } from "react-router-dom";
 import Logo from "../components/admin/Logo";
 import NavMenu from "../components/admin/NavMenu";
 import { ToastContainer } from "react-toastify";
+import { useAuth } from "../hooks/useAuth";
 
 export default function AppLayout() {
-    return (
+    const { data, isError, isLoading } = useAuth()
+
+    if(isLoading) return 'Cargando...'
+    if(isError) return <Navigate to={'/auth/login'}/>
+    if(data) return (
         <>
         
             <header
@@ -17,7 +22,9 @@ export default function AppLayout() {
                         
                         </Link>
                     </div>
-                    <NavMenu />
+                    <NavMenu 
+                        name={data.name}
+                    />
                 </div>
 
             </header>
