@@ -1,16 +1,18 @@
-import { FieldErrors, UseFormRegister } from "react-hook-form";
+import { FieldErrors, UseFormRegister, Control } from "react-hook-form";
 import ErrorMessage from "../ui/ErrorMessage";
-import { AsignacionFormData, Cajas, Operadores, Unidades } from "../../types";
+import { AsignacionFormData, CajasBase, OperadoresBase, UnidadesBase } from "../../types";
 
 type AsignacionFormProps = {
     register: UseFormRegister<AsignacionFormData>
     errors: FieldErrors<AsignacionFormData>
-    unidades: Unidades
-    cajas: Cajas
-    operadores: Operadores
+    control?: Control<AsignacionFormData>
+    unidades: UnidadesBase
+    cajas: CajasBase
+    operadores: OperadoresBase
+    cajaDisabled: boolean
 }
 
-export default function AsignacionForm({errors, register, unidades, cajas, operadores}: AsignacionFormProps) {
+export default function AsignacionForm({errors, register, unidades, cajas, operadores, cajaDisabled}: AsignacionFormProps) {
     return (
         <>
             <div className="mb-5 space-y-3">
@@ -26,7 +28,7 @@ export default function AsignacionForm({errors, register, unidades, cajas, opera
                 >
                     <option value="" >--Seleccione--</option>
                     {unidades.map( unidad => (
-                        <option key={unidad.id} value={unidad.id}>{unidad.no_unidad}</option>
+                        <option key={unidad.id} value={unidad.id}>{unidad.no_unidad} - {unidad.tipo_unidad}</option>
                     ))}
                     
                 </select>
@@ -41,11 +43,15 @@ export default function AsignacionForm({errors, register, unidades, cajas, opera
                     Placa de Remolque
                 </label>
                 <select
+                    disabled={cajaDisabled}
                     id="cajaId"
                     {...register("cajaId", { 
-                        required: "Seleccione un remolque"
+                        validate: (value) => {
+                            if(!cajaDisabled && !value) return "Seleccione un remolque"
+                            return true
+                        }
                     })}
-                    className="border p-2 w-full"
+                    className="border p-2 w-full disabled:bg-gray-100 disabled:text-gray-500 disabled:cursor-not-allowed"
                 >
                     <option value="" >--Seleccione--</option>
                     {cajas.map(caja => (

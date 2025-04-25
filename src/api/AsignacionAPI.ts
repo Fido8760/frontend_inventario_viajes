@@ -1,18 +1,23 @@
 import { isAxiosError } from "axios";
 import api from "../lib/axios";
-import { Asignacion, AsignacionFormData, cajasSchema, dashboardAsignacionSchema, operadoresSchema, unidadesSchema } from "../types";
+import { AsignacionCompleta, asignacionCompletaSchema, AsignacionFormData, asignacionPaginationApiSchema, cajasSchemaBase, operadoresSchemaBase, unidadesSchemaBase } from "../types";
+import { ZodError } from "zod";
 
+//Obtener todas la unidades
 export async function getUnidades() {
     try {
-        
         const { data } = await api('/assignments/unidades')
-        const response = unidadesSchema.safeParse(data)
-        if(response.success) {
-            return response.data
-        }
+        const response = unidadesSchemaBase.parse(data)
+        return response
     } catch (error) {
         if(isAxiosError(error) && error.response) {
             throw new Error(error.response.data.error)
+        } else if ( error instanceof ZodError) {
+            console.error("Error Zod en getUnidades:", error.errors);
+            throw new Error("Los datos de operadores recibidos no son válidos.");
+        } else {
+            console.error("Error desconocido en getUnidades:", error)
+            throw new Error("Ocurrió un error inesperado al obtener las unidades.");
         }
     }
 }
@@ -21,14 +26,17 @@ export async function getUnidades() {
 export async function getCajas() {
     try {
         const { data } = await api('/assignments/cajas');
-        const response = cajasSchema.safeParse(data);
-
-        if (response.success) {
-            return response.data;
-        }
+        const response = cajasSchemaBase.parse(data);
+        return response
     } catch (error) {
         if (isAxiosError(error) && error.response) {
             throw new Error(error.response.data.error);
+        } else if ( error instanceof ZodError) {
+            console.error("Error Zod en getCajas:", error.errors);
+            throw new Error("Los datos de operadores recibidos no son válidos.");
+        } else {
+            console.error("Error desconocido en getCajas:", error)
+            throw new Error("Ocurrió un error inesperado al obtener las cajas.");
         }
     }
 }
@@ -38,25 +46,29 @@ export async function getCajas() {
 export async function getOperadores() {
     try {
         const { data } = await api('/assignments/operadores');
-        const response = operadoresSchema.safeParse(data);
-
-        if (response.success) {
-            return response.data;
-        }
+        const response = operadoresSchemaBase.parse(data);
+        return response
+        
     } catch (error) {
         if (isAxiosError(error) && error.response) {
             throw new Error(error.response.data.error);
+        } else if ( error instanceof ZodError) {
+            console.error("Error Zod en getOperadores:", error.errors);
+            throw new Error("Los datos de operadores recibidos no son válidos.");
+        } else {
+            console.error("Error desconocido en getOperadores:", error)
+            throw new Error("Ocurrió un error inesperado al obtener operadores.");
         }
     }
 }
 
 
-export async function getAsignaciones() {
+export async function getAsignaciones(take: number, skip: number) {
     
     try {
-        const url = '/assignments'
+        const url = `/assignments?take=${take}&skip=${skip}`
         const { data } = await api(url)
-        const response = dashboardAsignacionSchema.safeParse(data)
+        const response = asignacionPaginationApiSchema.safeParse(data)
         if(response.success) {
             return response.data
         }
@@ -67,25 +79,35 @@ export async function getAsignaciones() {
     }
 }
 
+type CrearAsignacionResponse = {
+    message: string;
+    id: number;
+}
+  
 export async function crearAsignacion(formData: AsignacionFormData) {
     
-
     try {
-        const { data } = await api.post('/assignments', formData)
+        const { data } = await api.post<CrearAsignacionResponse>('/assignments', formData)
 
         return data
     } catch (error) {
         if(isAxiosError(error) && error.response) {
-            throw new Error(error.response.data.error)
+            const data = error.response.data
+            if (data?.errors?.[0]?.msg) {
+                throw new Error(data.errors[0].msg)
+            }
+            
+            throw new Error(data?.error || "Error desconocido")
         }
     }
 }
 
-export async function getAsignacionById(id: Asignacion['id']) {
+export async function getAsignacionById(id: AsignacionCompleta['id']) {
     
     try {
         const { data } = await api(`/assignments/${id}`)
-        return data
+        const response = asignacionCompletaSchema.parse(data)
+        return response
     } catch (error) {
         if(isAxiosError(error) && error.response) {
             throw new Error(error.response.data.error)
@@ -95,7 +117,7 @@ export async function getAsignacionById(id: Asignacion['id']) {
 
 type AsignacionAPIType = {
     formData: AsignacionFormData
-    asignacionId: Asignacion['id']
+    asignacionId: AsignacionCompleta['id']
 }
 
 export async function updateAsignacion({formData, asignacionId} : AsignacionAPIType) {
@@ -104,13 +126,16 @@ export async function updateAsignacion({formData, asignacionId} : AsignacionAPIT
         const { data } = await api.put<string>(`/assignments/${asignacionId}`, formData)
         return data
     } catch (error) {
+        let errorMessage 
         if(isAxiosError(error) && error.response) {
-            throw new Error(error.response.data.error)
+            const responseData = error.response.data 
+            errorMessage = responseData.errors[0].msg;
         }
+        throw new Error(errorMessage);
     }
 }
 
-export async function deleteAsignacion(id: Asignacion['id']) {
+export async function deleteAsignacion(id: AsignacionCompleta['id']) {
     
     try {
         const { data } = await api.delete<string>(`/assignments/${id}`)

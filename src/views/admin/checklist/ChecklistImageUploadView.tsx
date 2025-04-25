@@ -1,5 +1,5 @@
 import { useMutation } from "@tanstack/react-query";
-import { uploadImage } from "../../../api/CheckelistAPI";
+import { uploadImage } from "../../../api/ChecklistAPI";
 import { useParams, Link, useNavigate } from "react-router-dom"; // <-- Importa useNavigate
 import { toast } from "react-toastify";
 import { useState, useEffect } from "react";
@@ -27,11 +27,11 @@ export default function ChecklistImageUploadView() {
     const [uploadedFields, setUploadedFields] = useState<Record<string, boolean>>({});
 
     useEffect(() => {
-        // Si ya completó el checklist, lo redirigimos
+        // Verificar si el checklist está completo antes de redirigir
         if (localStorage.getItem("checklistCompleted") === "true") {
-            navigate("/", { replace: true });
+            navigate(`/asignacion/${asignacionId}/createChecklist/${checklistId}/uploadImages`, { replace: true });
         }
-    }, [navigate]);
+    }, [navigate, asignacionId, checklistId]);
 
     const uploadImageMutation = useMutation({
         mutationFn: uploadImage,

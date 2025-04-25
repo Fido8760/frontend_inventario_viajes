@@ -4,26 +4,40 @@ import { QuestionType, UploadImageResponse, uploadImageResponseSchema } from "..
 
 /** Checklist */
 
-export type ChecklistAPI = {
-    asignacionId: number;
-    formData: {
-      respuestas: {
-        preguntas: Array<{
-          idPregunta: number;
-          tipo: QuestionType;
-          respuesta: string | number | null;
-        }>;
-      };
-    };
+export type BackendChecklistPayload = {
+  checklist: {
+      secciones: Array<{
+          nombre: string;
+          preguntas: Array<{
+              idPregunta: number;
+              pregunta: string; 
+              respuesta: string | number | null | undefined
+              tipo: QuestionType; 
+              aplicaA: string; 
+          }>;
+      }>;
   };
-export async function postChecklist({formData, asignacionId}: Pick<ChecklistAPI, 'asignacionId' | 'formData'>) {
+};
+
+export type PostChecklistArgs = {
+  asignacionId: number;
+  body: BackendChecklistPayload; // La función recibe el cuerpo ya construido
+};
+
+type PostChecklistSuccessData = {
+  message: string;
+  id?: number;
+};
+  
+export async function postChecklist({body , asignacionId}: PostChecklistArgs) {
 
     const url = `/assignments/${asignacionId}/checklist`
     try {
-        const { data } = await api.post(url, formData);
+        const { data } = await api.post<PostChecklistSuccessData>(url, body );
         return data;
         
     } catch (error) {
+        console.log(error)
         if (isAxiosError(error) && error.response) {
             throw new Error(error.response.data.error);
         }

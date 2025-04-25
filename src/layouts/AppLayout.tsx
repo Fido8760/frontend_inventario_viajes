@@ -17,7 +17,7 @@ export default function AppLayout() {
             >
                 <div className=" max-w-screen-2xl mx-auto flex flex-col lg:flex-row justify-between items-center">
                     <div className=" w-64">
-                        <Link to={'/'}>
+                        <Link to={'/?page=1'}>
                             <Logo />
                         
                         </Link>

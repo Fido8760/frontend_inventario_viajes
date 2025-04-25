@@ -21,7 +21,7 @@ export default function Router() {
                     <Route path='/asignacion/:asignacionId/edit' element={<EditarAsignacionView />}  />
                     <Route path='/asignacion/:asignacionId' element={<ChecklistDetailsView />}  />
                     <Route path='/asignacion/:asignacionId/createChecklist' element={<ChecklistCreateView />}  />
-                    <Route path='/asignacion/:asignacionId/createChecklist/:checklistId' element={<ChecklistImageUploadView />}  />
+                    <Route path='/asignacion/:asignacionId/createChecklist/:checklistId/uploadImages' element={<ChecklistImageUploadView />}  />
                 </Route>
 
                 <Route element={<AuthLayout />}>

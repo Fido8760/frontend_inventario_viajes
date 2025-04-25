@@ -5,6 +5,7 @@ import { AsignacionFormData } from "../../../types"
 import { crearAsignacion, getCajas, getOperadores, getUnidades } from "../../../api/AsignacionAPI"
 import { useMutation, useQuery } from "@tanstack/react-query"
 import { toast } from "react-toastify"
+import { useEffect, useState } from "react"
 
 
 
@@ -32,7 +33,20 @@ export default function CrearAsgnacion() {
         queryFn: getOperadores
     })
 
-    const {register , handleSubmit, formState: {errors}} = useForm({defaultValues: initialValues})
+    const {register , handleSubmit, formState: {errors}, watch, setValue} = useForm({defaultValues: initialValues})
+
+    const unidadIdSeleccionada = watch("unidadId")
+    const [cajaDisabled, setCajaDisabled] = useState(false)
+    
+    useEffect(() => {
+        const unidad = unidades?.find(unidad => unidad.id === +unidadIdSeleccionada)
+        if(unidad?.tipo_unidad === "MUDANCERO" || unidad?.tipo_unidad === "CAMIONETA") {
+            setCajaDisabled(true)
+            setValue("cajaId", 0)
+        } else {
+            setCajaDisabled(false)
+        }
+    },[unidadIdSeleccionada, unidades, setValue])
 
     const {mutate} = useMutation({
         mutationFn: crearAsignacion,
@@ -40,8 +54,10 @@ export default function CrearAsgnacion() {
             toast.error(error.message)
         },
         onSuccess: (data) => {
-            toast.success(data.message)
-            navigate(`/asignacion/${data.id}/createChecklist`)
+            if(data) {
+                toast.success(data.message)
+                navigate(`/asignacion/${data.id}/createChecklist`)
+            }
         }
     })
 
@@ -54,7 +70,7 @@ export default function CrearAsgnacion() {
                 <nav className=" my-5">
                 <Link
                     className="  bg-blue-800 hover:bg-blue-900 rounded-md px-10 py-3 text-white text-xl font-bold cursor-pointer transition-colors"
-                    to={'/'}
+                    to={'/?page=1'}
                 >Volver</Link>
                 </nav>
                 <form 
@@ -68,6 +84,7 @@ export default function CrearAsgnacion() {
                         unidades={unidades || []}
                         cajas={cajas || []}
                         operadores={operadores || []}
+                        cajaDisabled={cajaDisabled}
                     />
                     <input 
                         type="submit"

@@ -15,6 +15,7 @@ export default function EditarAsignacionView() {
     retry: false
   })
 
+
   if(isLoading) return 'Cargando...'
   if(isError) return <Navigate to={'/404'} />
 

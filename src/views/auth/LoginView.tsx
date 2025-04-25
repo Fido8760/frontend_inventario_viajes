@@ -20,7 +20,7 @@ export default function LoginView() {
             toast.error(error.message)
         },
         onSuccess: () => {
-            navigate('/')
+            navigate('/?page=1')
         }
     })
 
@@ -81,7 +81,7 @@ export default function LoginView() {
                     className=" text-center text-lg block"
                     to={'/auth/forgot-password'}
                 >
-                    ¿Olvidaste tu password? recuperalo aquí
+                    ¿Olvidaste tu password? Recupéralo aquí
                 </Link>
             </nav>
         
