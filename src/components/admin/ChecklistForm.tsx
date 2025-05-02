@@ -4,7 +4,7 @@ import { ChecklistFormData, PreguntaUI, SeccionUI } from "../../types";
 import ErrorMessage from "../ui/ErrorMessage";
 
 type ChecklistFormProps = {
-  preguntasDataUI: SeccionUI[];
+  seccionesParaRenderizar: SeccionUI[];
   errors: FieldErrors<ChecklistFormData>;
   control: Control<ChecklistFormData>;
 };
@@ -13,11 +13,11 @@ type RespuestaPath = `respuestas.preguntas.${number}.respuesta`;
 type IdPreguntaPath = `respuestas.preguntas.${number}.idPregunta`;
 type TipoPath = `respuestas.preguntas.${number}.tipo`;
 
-export default function ChecklistForm({ control, errors, preguntasDataUI }: ChecklistFormProps) {
-  const [pagina, setPagina] = useState(0); // Controla la página actual
+export default function ChecklistForm({ control, errors, seccionesParaRenderizar }: ChecklistFormProps) {
+  const [pagina, setPagina] = useState(0);
 
   const avanzarPagina = async () => {
-    if (pagina < preguntasDataUI.length + 1) {
+    if (pagina < seccionesParaRenderizar.length + 1) {
       setPagina(pagina + 1)
     }
   };
@@ -29,7 +29,7 @@ export default function ChecklistForm({ control, errors, preguntasDataUI }: Chec
   const calculateStartIndexForPage = ( pageIndex: number): number => {
     let startIndex = 0
     for(let i = 0; i < pageIndex; i++) {
-      startIndex += preguntasDataUI[i].items.length || 0
+      startIndex += seccionesParaRenderizar[i].preguntas.length || 0
     }
     return startIndex
   }
@@ -144,18 +144,18 @@ export default function ChecklistForm({ control, errors, preguntasDataUI }: Chec
           return null;
     }
   }
-  const currentSection = preguntasDataUI[pagina];
+  const currentSection = seccionesParaRenderizar[pagina];
   return (
     <div className="mb-6">
       {/* Sección actual basada en la paginación */}
       {currentSection ? (
         <>
           <h2 className="text-xl font-semibold text-indigo-700 border-b pb-2 mb-4">
-            {currentSection.seccion}
+            {currentSection.nombre}
           </h2>
           {/* Mapea sobre los items de la sección actual */}
           <div className="mt-4">
-            {currentSection.items.map((preguntaUI, itemIndex) =>
+            {currentSection.preguntas.map((preguntaUI, itemIndex) =>
               // Pasa la pregunta UI y su índice DENTRO de la sección
               renderInput(preguntaUI, itemIndex)
             )}
@@ -179,7 +179,7 @@ export default function ChecklistForm({ control, errors, preguntasDataUI }: Chec
         ) : (
            <div></div> // Placeholder para mantener el espacio si no hay botón "Anterior"
         )}
-        {pagina < preguntasDataUI.length - 1 ? (
+        {pagina < seccionesParaRenderizar.length - 1 ? (
           <button
             type="button"
             onClick={avanzarPagina} // Llama a la función actualizada (que podría incluir trigger)

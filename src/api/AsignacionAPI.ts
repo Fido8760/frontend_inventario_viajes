@@ -1,6 +1,6 @@
 import { isAxiosError } from "axios";
 import api from "../lib/axios";
-import { AsignacionCompleta, asignacionCompletaSchema, AsignacionFormData, asignacionPaginationApiSchema, cajasSchemaBase, operadoresSchemaBase, unidadesSchemaBase } from "../types";
+import { asignacionByIdApiResponseSchema, AsignacionCompleta, AsignacionFormData, asignacionPaginationApiSchema, cajasSchemaBase, operadoresSchemaBase, unidadesSchemaBase } from "../types";
 import { ZodError } from "zod";
 
 //Obtener todas la unidades
@@ -106,8 +106,16 @@ export async function getAsignacionById(id: AsignacionCompleta['id']) {
     
     try {
         const { data } = await api(`/assignments/${id}`)
-        const response = asignacionCompletaSchema.parse(data)
-        return response
+        const result = asignacionByIdApiResponseSchema.safeParse(data)
+
+        if(result.success) {
+            return result.data
+        } else {
+            // ¡Fallo! Los datos no coinciden con el schema.
+            console.error("Error de Validación Zod (safeParse):", result.error.errors); // Muestra los detalles del error
+            // Lanzar un error para que React Query lo detecte
+            throw new Error("Los datos recibidos de la API no tienen el formato esperado.");
+        }
     } catch (error) {
         if(isAxiosError(error) && error.response) {
             throw new Error(error.response.data.error)

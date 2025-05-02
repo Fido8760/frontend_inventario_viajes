@@ -15,8 +15,6 @@ export default function ChecklistDetailsView() {
     })
 
     if(isLoading) return 'Cargando...'
-
-
     if(data) return (
         <>
             <div className=' flex flex-col'>
@@ -26,7 +24,7 @@ export default function ChecklistDetailsView() {
 
                 <nav className="flex flex-col md:flex-row gap-4 mt-4"> 
                     <Link
-                        to={'/'}
+                        to={'/?page=1'}
                         className="bg-blue-800 hover:bg-blue-900 px-10 py-3 rounded-md text-white text-sm uppercase font-bold cursor-pointer transition-colors w-full md:w-auto text-center"
                     >
                     Volver
@@ -41,10 +39,6 @@ export default function ChecklistDetailsView() {
                 <DetallesAsigancion 
                     data={data}
                 />
-
-
-
-
             </div>
         </>
     )

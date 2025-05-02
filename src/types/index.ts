@@ -141,13 +141,19 @@ export const PreguntaSchemaUI = z.object({
 });
 
 export const SeccionSchemaUI = z.object({
-  seccion: z.string(),
-  items: z.array(PreguntaSchemaUI)
+  nombre: z.string(),
+  preguntas: z.array(PreguntaSchemaUI)
 });
+
+export const PlantillaChecklistSchema = z.object({
+  preguntas: z.array(SeccionSchemaUI)
+})
 
 export const PreguntasDataSchemaUI = z.object({
   preguntas: z.array(SeccionSchemaUI)
 });
+
+
 
 // Tipos inferidos para la definición de la UI
 export type PreguntasDataUI = z.infer<typeof PreguntasDataSchemaUI>;
@@ -223,3 +229,102 @@ export const uploadImageResponseSchema = z.object({
 });
 
 export type UploadImageResponse = z.infer<typeof uploadImageResponseSchema>;
+
+
+/** Schemas de respuesta JSON para asignación con checklist para renderizado */
+
+
+const usuarioEnAsignacionSchema = z.object({
+  id: z.number(),
+  name: z.string(),
+  email: z.string().email(), // <-- Incluye todos los campos de la respuesta
+});
+
+const unidadEnAsignacionSchema = z.object({
+  id: z.number(),
+  no_unidad: z.string(),
+  tipo_unidad: z.enum(['TRACTOCAMION', 'MUDANCERO', 'CAMIONETA']), // Sé específico si puedes
+  u_placas: z.string(),
+});
+
+const cajaEnAsignacionSchema = z.object({
+  id: z.number(),
+  numero_caja: z.string(), // <-- Incluye todos los campos de la respuesta
+  c_placas: z.string(),
+  c_marca: z.string(),
+  c_anio: z.number(),
+});
+
+const operadorEnAsignacionSchema = z.object({
+  id: z.number(),
+  nombre: z.string(),
+  apellido_p: z.string(),
+  apellido_m: z.string(),
+  vigencia_lic: z.string(), // <-- Incluye todos los campos de la respuesta (o coerce.date)
+  vigencia_apto: z.string() // <-- Incluye todos los campos de la respuesta (o coerce.date)
+});
+
+// --- Schemas para la ESTRUCTURA DEL CHECKLIST DENTRO de la respuesta de getAsignacionById ---
+
+const imagenEnChecklistSchema = z.object({
+  id: z.number(),
+  urlImagen: z.string(), // Podría ser .url()
+  checklistId: z.number(),
+});
+
+const preguntaRespuestaChecklistSchema = z.object({
+  idPregunta: z.number(),
+  pregunta: z.string(),
+  respuesta: z.union([z.string(), z.number(), z.null()]), // Permite null si se limpió
+  tipo: z.enum(['numero', 'si_no', 'opciones', 'texto']), // Usa los tipos de tu JSON
+  aplicaA: z.enum(['todos', 'tractocamion']), // Usa los aplicaA de tu JSON
+});
+
+export type PreguntaRespuesta = z.infer<typeof preguntaRespuestaChecklistSchema>
+
+const seccionChecklistSchema = z.object({
+  nombre: z.string(),
+  preguntas: z.array(preguntaRespuestaChecklistSchema),
+});
+
+const respuestaChecklistSchema = z.object({
+  secciones: z.array(seccionChecklistSchema),
+});
+
+const datosChecklistEnAsignacionSchema = z.object({
+  id: z.number(),
+  asignacionId: z.number(),
+  respuestas: respuestaChecklistSchema,
+  createdAt: z.string().datetime(), // Incluye timestamps del checklist
+  updatedAt: z.string().datetime(), // Incluye timestamps del checklist
+  imagenes: z.array(imagenEnChecklistSchema), // Usa el schema de imagen
+});
+
+// --- Schema PRINCIPAL para el objeto 'asignacion' devuelto por getAsignacionById ---
+// Este SÍ debe incluir el campo 'checklists'
+export const asignacionByIdApiResponseSchema = z.object({
+  id: z.number(),
+  unidadId: z.number(),
+  cajaId: z.number().nullable(),
+  operadorId: z.number(),
+  userId: z.number(),
+  createdAt: z.string(),
+  updatedAt: z.string(),
+  // Usa los schemas específicos definidos arriba que coinciden con la respuesta
+  usuario: usuarioEnAsignacionSchema,
+  unidad: unidadEnAsignacionSchema,
+  caja: cajaEnAsignacionSchema.nullable(), // Objeto caja completo, o null
+  operador: operadorEnAsignacionSchema,
+  // Incluye el array de checklists usando el schema correcto
+  checklists: z.array(datosChecklistEnAsignacionSchema),
+});
+
+// Tipo inferido para usar en el frontend
+export type AsignacionByIdApiResponse = z.infer<typeof asignacionByIdApiResponseSchema>;
+
+// --- Schema Opcional para TODA la respuesta (si incluye 'message') ---
+export const fullApiAsignacionResponseSchema = z.object({
+  message: z.string().optional(), // Hacer opcional por si GET no lo trae
+  asignacion: asignacionByIdApiResponseSchema,
+});
+export type FullApiAsignacionResponse = z.infer<typeof fullApiAsignacionResponseSchema>;
