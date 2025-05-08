@@ -3,28 +3,45 @@ import { z } from 'zod'
 /** Usuario */
 export const authSchema = z.object({
     name: z.string(),
-    email: z.string().email(),
+    lastname: z.string(),
+    email: z.string(),
     password: z.string(),
-    password_confirmation: z.string()
+    password_confirmation: z.string(),
+    rol: z.number()
 })
-
 export type Auth = z.infer<typeof authSchema>
 export type UserLoginForm = Pick<Auth, 'email' | 'password'>
+export type UserRegistrationForm = Pick<Auth,'name' | 'lastname' |'email' | 'password' | 'password_confirmation'>
 
+export type UserEditForm = Pick<UserRegistrationForm, 'name' | 'lastname' | 'email'>
 /** Users  */
 
 export const userSchema = authSchema.pick({
   name: true,
-  email: true
+  lastname: true,
+  email: true,
+  rol: true
 }).extend({
   id: z.number()
 })
 
+export const usersSchema = z.array(userSchema)
 export type User = z.infer<typeof userSchema>
+
+export const adminUserEditFormSchema = z.object({
+    name: z.string(),
+    lastname: z.string(),
+    email: z.string(),
+    rol: z.number() // Ejemplo de validación
+});
+export type AdminUserEditFormData = z.infer<typeof adminUserEditFormSchema>;
+
 
 /** Asignacion */
 export const usuarioSchemaBase = z.object({
-  name: z.string()
+  name: z.string(),
+  lastname: z.string(),
+  rol: z.number()
 })
   
 export const unidadSchemaBase = z.object({
@@ -81,7 +98,9 @@ export type AsignacionCompleta = z.infer<typeof asignacionCompletaSchema>;
 // ========================================================================
 
 const apiPaginatedUsuarioSchema = z.object({
-  name: z.string()
+  name: z.string(),
+  lastname: z.string(),
+  rol: z.number()
 });
 
 const apiPaginatedUnidadSchema = z.object({
@@ -282,16 +301,16 @@ const preguntaRespuestaChecklistSchema = z.object({
 
 export type PreguntaRespuesta = z.infer<typeof preguntaRespuestaChecklistSchema>
 
-const seccionChecklistSchema = z.object({
+export const seccionChecklistSchema = z.object({
   nombre: z.string(),
   preguntas: z.array(preguntaRespuestaChecklistSchema),
 });
 
-const respuestaChecklistSchema = z.object({
+export const respuestaChecklistSchema = z.object({
   secciones: z.array(seccionChecklistSchema),
 });
 
-const datosChecklistEnAsignacionSchema = z.object({
+export const datosChecklistEnAsignacionSchema = z.object({
   id: z.number(),
   asignacionId: z.number(),
   respuestas: respuestaChecklistSchema,

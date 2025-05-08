@@ -93,7 +93,6 @@ export default function ChecklistCreateView() {
 
     useEffect(() => {
         if(!isLoadingAsignacion && seccionesFiltradas.length > 0 ) {
-            console.log("RESETTING FORM with secciones:", seccionesFiltradas);
             const calculatedDefaults = {
                 respuestas: {
                     preguntas: seccionesFiltradas.flatMap(seccion => 
@@ -155,7 +154,7 @@ export default function ChecklistCreateView() {
                 }))
             }
         }
-        console.log("Datos a enviar al backend (Filtrados):", JSON.stringify(finalBody, null, 2));
+
         const mutationArgs: PostChecklistArgs = { asignacionId: asignacionId!, body: finalBody };
         mutate(mutationArgs);
     }

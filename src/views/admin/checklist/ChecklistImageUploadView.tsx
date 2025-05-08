@@ -4,6 +4,7 @@ import { useParams, Link, useNavigate } from "react-router-dom"; // <-- Importa 
 import { toast } from "react-toastify";
 import { useState, useEffect } from "react";
 
+
 const imageFields = [
     { id: "frontal", label: "Fotografía Frontal de la Unidad" },
     { id: "lateral_derecho", label: "Fotografía Lateral Derecha de la Unidad" },
@@ -110,9 +111,9 @@ export default function ChecklistImageUploadView() {
                 {isChecklistComplete && (
                     <div className="mt-6 flex justify-center">
                         <Link 
-                            to="/" 
+                            to="/?page=1" 
                             className="bg-blue-800 hover:bg-blue-900 text-white font-bold py-3 px-6 rounded-md"
-                            onClick={handleFinalizeChecklist} // Guardar estado al finalizar
+                            onClick={handleFinalizeChecklist}
                         >
                             Finalizar Checklist
                         </Link>

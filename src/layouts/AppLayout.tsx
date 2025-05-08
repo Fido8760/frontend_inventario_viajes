@@ -5,6 +5,7 @@ import { ToastContainer } from "react-toastify";
 import { useAuth } from "../hooks/useAuth";
 
 export default function AppLayout() {
+    
     const { data, isError, isLoading } = useAuth()
 
     if(isLoading) return 'Cargando...'
@@ -24,6 +25,8 @@ export default function AppLayout() {
                     </div>
                     <NavMenu 
                         name={data.name}
+                        lastname={data.lastname}
+                        rol={data.rol}
                     />
                 </div>
 
