@@ -1,6 +1,6 @@
 import { isAxiosError } from "axios";
 import api from "../lib/axios";
-import { AdminUserEditFormData, UserLoginForm, UserRegistrationForm, userSchema, usersSchema } from "../types";
+import { AdminUserEditFormData, ConfirmToken, ForgotPasswordForm, NewPasswordForm, UserLoginForm, UserRegistrationForm, userSchema, usersSchema } from "../types";
 
 export async function createAccount (formData: UserRegistrationForm) {
     const url = '/auth/create-account'
@@ -19,6 +19,45 @@ export async function authenticateUser(formData: UserLoginForm) {
         const url = '/auth/login'
         const { data } = await api.post<string>(url, formData)
         localStorage.setItem('AUTH_TOKEN', data)
+        return data
+ 
+    } catch (error) {
+        if(isAxiosError(error) && error.response) {
+            throw new Error(error.response.data.error)
+        }
+    }
+}
+
+export async function forgotPassword(formData: ForgotPasswordForm) {
+    try {
+        const url = '/auth/forgot-password'
+        const { data } = await api.post<string>(url, formData)
+        return data
+ 
+    } catch (error) {
+        if(isAxiosError(error) && error.response) {
+            throw new Error(error.response.data.error)
+        }
+    }
+}
+
+export async function validateToken(formData: ConfirmToken) {
+    try {
+        const url = '/auth/validate-token'
+        const { data } = await api.post<string>(url, formData)
+        return data
+ 
+    } catch (error) {
+        if(isAxiosError(error) && error.response) {
+            throw new Error(error.response.data.error)
+        }
+    }
+}
+
+export async function updatePasswordWithToken({formData, token}: {formData: NewPasswordForm, token: ConfirmToken['token']}) {
+    try {
+        const url = `auth/reset-password/${token}`
+        const { data } = await api.post<string>(url, formData)
         return data
  
     } catch (error) {

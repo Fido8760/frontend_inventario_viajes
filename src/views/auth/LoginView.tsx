@@ -28,6 +28,9 @@ export default function LoginView() {
     return (
         <>
             <h1 className=" text-4xl font-bold">Iniciar Sesión</h1>
+            <p className=" text-xl font-light text-gray-500 mt-5">
+                Ingresa tus datos para comenzar acceder a la aplicación
+            </p>
 
             <form 
                 onSubmit={handleSubmit(handleLogin)}

@@ -4,18 +4,21 @@ import { toast } from "react-toastify";
 import Swal from "sweetalert2";
 import { deleteUser } from "../../api/AuthAPI";
 import { User } from "../../types";
+import { useAuth } from "../../hooks/useAuth";
 
 export default function UsersTable({ data }: { data: User[] }) {
     const queryClient = useQueryClient();
 
+    const { data: authUser } = useAuth()
+
     const { mutate } = useMutation({
         mutationFn: deleteUser,
         onError: (error) => {
-        toast.error(error.message);
+            toast.error(error.message);
         },
         onSuccess: (data) => {
-        toast.success(data);
-        queryClient.invalidateQueries({ queryKey: ["users"] });
+            toast.success(data);
+            queryClient.invalidateQueries({ queryKey: ["users"] });
         },
     });
 
@@ -82,22 +85,28 @@ export default function UsersTable({ data }: { data: User[] }) {
                                 {user.rol === 2 ? "Usuario" : "Administrador"}
                                 </td>
                                 <td className="relative py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-0 ">
-                                <div className="flex gap-5 justify-end items-center">
-                                    <Link
-                                    className=" text-indigo-600 hover:text-indigo-800"
-                                    to={`/users/${user.id}/edit`}
-                                    >
-                                    {" "}
-                                    Editar <span className="sr-only">, {}</span>
-                                    </Link>
-                                    <button
-                                    type="button"
-                                    className=" text-red-600 hover:text-red-800 cursor-pointer"
-                                    onClick={() => handleDelete(user.id)}
-                                    >
-                                    Eliminar
-                                    </button>
-                                </div>
+                                    <div className="flex gap-5 justify-end items-center">
+                                        { authUser?.email !== user.email ? (
+                                            <>
+                                                <Link
+                                                    className=" text-indigo-600 hover:text-indigo-800"
+                                                    to={`/users/${user.id}/edit`}
+                                                >
+                                                {" "}
+                                                    Editar <span className="sr-only">, {}</span>
+                                                </Link>
+                                                <button
+                                                    type="button"
+                                                    className=" text-red-600 hover:text-red-800 cursor-pointer"
+                                                    onClick={() => handleDelete(user.id)}
+                                                >
+                                                    Eliminar
+                                                </button>
+                                            </>
+                                        ) : (
+                                            <div></div>
+                                        )}
+                                    </div>
                                 </td>
                             </tr>
                             ))}

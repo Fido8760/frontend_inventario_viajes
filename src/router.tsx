@@ -1,6 +1,5 @@
 import { BrowserRouter, Route, Routes } from 'react-router-dom'
 import LoginView from './views/auth/LoginView'
-import ForgotPassword from './views/auth/ForgotPassword'
 import AuthLayout from './layouts/AuthLayout'
 import AppLayout from './layouts/AppLayout'
 import DashboardView from './views/admin/DashboardView'
@@ -14,6 +13,8 @@ import RegisterView from './views/auth/RegisterView'
 import UsersView from './views/auth/UsersView'
 import EditUserView from './views/auth/EditUserView'
 import NotFound from './views/404/NotFound'
+import NewPasswordView from './views/auth/NewPasswordView'
+import ForgotPasswordView from './views/auth/ForgotPasswordView'
 
 
 export default function Router() {
@@ -35,7 +36,8 @@ export default function Router() {
 
                 <Route element={<AuthLayout />}>
                     <Route path='/auth/login' element={<LoginView />} index/>
-                    <Route path='/auth/forgot-password' element={<ForgotPassword />} />
+                    <Route path='/auth/forgot-password' element={<ForgotPasswordView />} />
+                    <Route path='/auth/new-password' element={<NewPasswordView />} />
                 </Route>
 
                 <Route element={<AuthLayout />}>

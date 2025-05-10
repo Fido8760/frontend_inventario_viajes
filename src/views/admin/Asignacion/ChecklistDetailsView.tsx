@@ -49,7 +49,7 @@ export default function ChecklistDetailsView() {
         }
     });
 
-    const handleDelete = async () => { // Convertir a async para usar await con Swal
+    const handleDelete = async () => {
         if (checklistIdParaAcciones === undefined) {
             toast.warn("No se puede eliminar: ID de checklist no encontrado.");
             return;
