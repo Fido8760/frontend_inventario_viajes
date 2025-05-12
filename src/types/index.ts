@@ -43,10 +43,12 @@ export type AdminUserEditFormData = z.infer<typeof adminUserEditFormSchema>;
 
 /** Asignacion */
 export const usuarioSchemaBase = z.object({
-  name: z.string(),
-  lastname: z.string(),
-  rol: z.number()
-})
+    id: z.number(), // <--- AÑADIR
+    name: z.string(),
+    lastname: z.string(),
+    email: z.string(), // <--- AÑADIR
+    rol: z.number()
+});
   
 export const unidadSchemaBase = z.object({
   id: z.number(),
@@ -260,7 +262,9 @@ export type UploadImageResponse = z.infer<typeof uploadImageResponseSchema>;
 const usuarioEnAsignacionSchema = z.object({
   id: z.number(),
   name: z.string(),
-  email: z.string().email(), // <-- Incluye todos los campos de la respuesta
+  lastname: z.string(),
+  email: z.string().email(),
+  rol: z.number() // <-- Incluye todos los campos de la respuesta
 });
 
 const unidadEnAsignacionSchema = z.object({

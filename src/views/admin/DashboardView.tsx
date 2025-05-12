@@ -12,7 +12,7 @@ import Pagination from "../../components/ui/Pagination";
 import { useAuth } from "../../hooks/useAuth";
 
 export default function DashboardView() {
-    const [searchParams, setSearchParams] = useSearchParams();
+    const [searchParams] = useSearchParams();
     const navigate = useNavigate();
     const [shouldRedirect, setShouldRedirect] = useState(false);
     const { data: authenticatedUser } = useAuth();

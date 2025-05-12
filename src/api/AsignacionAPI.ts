@@ -108,6 +108,8 @@ export async function getAsignacionById(id: AsignacionCompleta['id']) {
         const { data } = await api(`/assignments/${id}`)
         const result = asignacionByIdApiResponseSchema.safeParse(data)
 
+        console.log(result)
+
         if(result.success) {
             return result.data
         } else {

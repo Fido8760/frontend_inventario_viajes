@@ -1,6 +1,5 @@
 import AsignacionForm from "./AsignacionForm";
 import { Link, useNavigate } from "react-router-dom";
-// Asegúrate que AsignacionCompleta y UnidadBase estén importados desde tus tipos
 import { AsignacionCompleta, AsignacionFormData, UnidadBase } from "../../types";
 import { useForm } from "react-hook-form";
 import { getCajas, getOperadores, getUnidades, updateAsignacion } from "../../api/AsignacionAPI";
@@ -10,7 +9,7 @@ import { toast } from "react-toastify";
 import { useEffect, useMemo } from "react";
 
 type EditarAsignacionFormProps = {
-  data: AsignacionCompleta; // Datos originales recibidos
+  data: AsignacionCompleta;
   asignacionId: number;
 };
 
