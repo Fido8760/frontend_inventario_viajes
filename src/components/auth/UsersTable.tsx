@@ -117,25 +117,31 @@ export default function UsersTable({ data }: { data: User[] }) {
                     {data.map((user) => (
                     <div key={user.id} className="bg-white shadow-md rounded-lg p-4">
                         <p className="text-lg font-semibold text-gray-800">
-                        {user.name} {user.lastname}
+                        {   user.name} {user.lastname}
                         </p>
                         <p className="text-sm text-gray-600">
-                        <span className="font-medium">Email:</span> {user.email}
+                            <span className="font-medium">Email:</span> {user.email}
                         </p>
                         <p className="text-sm text-gray-600">
-                        <span className="font-medium">Rol:</span>{" "}
-                        {user.rol === 2 ? "Usuario" : "Administrador"}
+                            <span className="font-medium">Rol:</span>{" "}
+                            {user.rol === 2 ? "Usuario" : "Administrador"}
                         </p>
                         <div className="mt-3 flex justify-end gap-4">
-                        <Link
-                            to={`/users/${user.id}/edit`}
-                            className="text-indigo-600 hover:text-indigo-800 text-sm"
-                        >
-                            Editar
-                        </Link>
-                        <button className="text-red-600 hover:text-red-800 text-sm">
-                            Eliminar
-                        </button>
+                            { authUser?.email !== user.email ? (
+                                <>
+                                    <Link
+                                        to={`/users/${user.id}/edit`}
+                                        className="text-indigo-600 hover:text-indigo-800 text-sm"
+                                    >
+                                        Editar
+                                    </Link>
+                                    <button className="text-red-600 hover:text-red-800 text-sm">
+                                        Eliminar
+                                    </button>
+                                </>
+                            ) : (
+                                <div></div>
+                            ) }
                         </div>
                     </div>
                     ))}
