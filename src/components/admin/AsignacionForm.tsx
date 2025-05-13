@@ -22,7 +22,7 @@ export default function AsignacionForm({errors, register, unidades, cajas, opera
                 <select
                     id="unidadId"
                     {...register("unidadId", { 
-                        required: "Seleccione una unidad"
+                        required: "Seleccione una Unidad"
                     })}
                     className="border p-2 w-full"
                 >
