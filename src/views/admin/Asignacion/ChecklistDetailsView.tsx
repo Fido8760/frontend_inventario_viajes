@@ -6,8 +6,10 @@ import DetallesAsigancion from '../../../components/admin/DetallesAsigancion';
 import { deleteChecklist, DeleteChecklistArgs } from '../../../api/ChecklistAPI';
 import { toast } from 'react-toastify';
 import { asignacionByIdApiResponseSchema, AsignacionByIdApiResponse } from '../../../types';
+import { useAuth } from '../../../hooks/useAuth';
 
 export default function ChecklistDetailsView() {
+    const { data: authenticatedUser } = useAuth();
     const params = useParams();
     const queryClient = useQueryClient();
     const asignacionIdParam = params.asignacionId;
@@ -88,45 +90,52 @@ export default function ChecklistDetailsView() {
                     <p className='text-xl font-light text-gray-500 mt-1 mb-5'>Aquí está el resultado del checklist realizado</p>
 
                     <nav className="flex flex-col md:flex-row items-center gap-4 mt-4 mb-6">
-                        {/* Grupo Izquierdo */}
-                        <Link
-                            to={'/?page=1'}
-                            className="bg-blue-800 hover:bg-blue-900 px-10 py-3 rounded-md text-white text-sm uppercase font-bold cursor-pointer transition-colors w-full md:w-auto text-center"
-                        >
-                            Volver
-                        </Link>
+                    {/* Botón Volver - Siempre visible para todos los roles */}
+                    <Link
+                        to="/?page=1"
+                        className="bg-blue-800 hover:bg-blue-900 px-10 py-3 rounded-md text-white text-sm uppercase font-bold cursor-pointer transition-colors w-full md:w-auto text-center"
+                    >
+                        Volver
+                    </Link>
 
-                        {/* Botones condicionales basados en si existe checklistIdParaAcciones */}
-                        {checklistIdParaAcciones ? (
-                            <>
-                                <Link
-                                    to={`/asignacion/${asignacionId}/editChecklist/${checklistIdParaAcciones}`}
-                                    className="bg-red-800 hover:bg-red-900 px-10 py-3 rounded-md text-white text-sm uppercase font-bold cursor-pointer transition-colors w-full md:w-auto text-center"
-                                >
-                                    Editar Checklist
-                                </Link>
-                                <button
-                                    type="button"
-                                    onClick={handleDelete} // Llama al manejador sin argumentos (ya usa checklistIdParaAcciones)
-                                    disabled={isDeleting} // Deshabilita mientras elimina
-                                    className={`px-10 py-3 rounded-md text-sm uppercase font-bold cursor-pointer transition-colors w-full md:w-auto text-center md:ml-auto ${
+                    {/* Mostrar acciones solo si el usuario tiene rol 1 (admin) */}
+                    {authenticatedUser?.rol === 1 && (
+                        <>
+                            {checklistIdParaAcciones ? (
+                                <>
+                                    {/* Botón Editar - Solo para admin */}
+                                    <Link
+                                        to={`/asignacion/${asignacionId}/editChecklist/${checklistIdParaAcciones}`}
+                                        className="bg-yellow-600 hover:bg-yellow-700 px-10 py-3 rounded-md text-white text-sm uppercase font-bold cursor-pointer transition-colors w-full md:w-auto text-center"
+                                    >
+                                        Editar Checklist
+                                    </Link>
+
+                                    {/* Botón Eliminar - Solo para admin */}
+                                    <button
+                                        type="button"
+                                        onClick={handleDelete}
+                                        disabled={isDeleting}
+                                        className={`px-10 py-3 rounded-md text-sm uppercase font-bold cursor-pointer transition-colors w-full md:w-auto text-center ${
                                         isDeleting
-                                        ? 'bg-gray-400 text-gray-700 cursor-not-allowed'
-                                        : 'bg-red-200 hover:bg-red-600 text-red-600 hover:text-white'
-                                    }`}
+                                            ? 'bg-gray-400 text-gray-700 cursor-not-allowed'
+                                            : 'bg-red-600 hover:bg-red-700 text-white'
+                                        }`}
+                                    >
+                                        {isDeleting ? 'Eliminando...' : 'Eliminar Checklist'}
+                                    </button>
+                                </>
+                            ) : (
+                                /* Botón Crear - Solo para admin cuando no hay checklist */
+                                <Link
+                                    to={`/asignacion/${asignacionId}/createChecklist`}
+                                    className="bg-green-600 hover:bg-green-700 px-10 py-3 rounded-md text-white text-sm uppercase font-bold cursor-pointer transition-colors w-full md:w-auto text-center"
                                 >
-                                    {isDeleting ? 'Eliminando...' : 'Eliminar Checklist'}
-                                </button>
-                            </>
-                        ) : (
-                            // Si no hay checklist, mostrar botón Crear
-                            <Link
-                                to={`/asignacion/${asignacionId}/createChecklist`}
-                                className="bg-green-600 hover:bg-green-700 px-10 py-3 rounded-md text-white text-sm uppercase font-bold cursor-pointer transition-colors w-full md:w-auto text-center md:ml-auto" // Empujado a la derecha si es el único botón
-                            >
-                                Crear Checklist
-                            </Link>
-                        )}
+                                    Crear Checklist
+                                </Link>
+                            )}
+                        </>
+                    )}
                     </nav>
 
                     {/* Muestra detalles (incluso si no hay checklist aún) */}
