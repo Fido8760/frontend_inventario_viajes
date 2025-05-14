@@ -1,8 +1,9 @@
 import { useMutation } from "@tanstack/react-query";
-import { uploadImage } from "../../../api/ChecklistAPI";
 import { useParams, Link, useNavigate } from "react-router-dom"; // <-- Importa useNavigate
 import { toast } from "react-toastify";
 import { useState, useEffect } from "react";
+import imageCompression from 'browser-image-compression'
+import { uploadImage } from "../../../api/ChecklistAPI";
 
 
 const imageFields = [
@@ -46,19 +47,37 @@ export default function ChecklistImageUploadView() {
         },
     });
 
-    const handleChange = (e: React.ChangeEvent<HTMLInputElement>, fieldId: string) => {
+    const handleChange = async (e: React.ChangeEvent<HTMLInputElement>, fieldId: string) => {
         const files = e.target.files;
         if (files && files.length > 0 && asignacionId && checklistId) {
-            const file = files[0];
-            const data = { file, asignacionId, checklistId, fieldId };
-            uploadImageMutation.mutate(data);
+            const orginalFile = files[0]
 
-            // Actualiza la vista previa inmediatamente
-            const reader = new FileReader();
-            reader.onloadend = () => {
-                setImageUrls(prev => ({ ...prev, [fieldId]: reader.result as string }));
-            };
-            reader.readAsDataURL(file);
+            try {
+                const options = {
+                    maxSizeMB: 0.5,
+                    maxWidthOrHeight: 1024,
+                    useWebWorker: true,
+                    fileType: 'image/webp'
+                }
+
+                const compressedFile = await imageCompression(orginalFile, options)
+
+                const renamedFile = new File([compressedFile], `${fieldId}.webp`, {
+                type: 'image/webp',
+            });
+                const data = { file: renamedFile, asignacionId, checklistId, fieldId };
+                uploadImageMutation.mutate(data);
+    
+                // Actualiza la vista previa inmediatamente
+                const reader = new FileReader();
+                reader.onloadend = () => {
+                    setImageUrls(prev => ({ ...prev, [fieldId]: reader.result as string }));
+                };
+                reader.readAsDataURL(compressedFile);
+            } catch (error) {
+                toast.error("Error al comprimir la imagen.");
+                console.error("Error al comprimir:", error);
+            }
         }
     };
 
