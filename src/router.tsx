@@ -15,6 +15,7 @@ import EditUserView from './views/auth/EditUserView'
 import NotFound from './views/404/NotFound'
 import NewPasswordView from './views/auth/NewPasswordView'
 import ForgotPasswordView from './views/auth/ForgotPasswordView'
+import CalendarView from './views/admin/calendar/CalendarView'
 
 
 export default function Router() {
@@ -29,6 +30,7 @@ export default function Router() {
                     <Route path='/asignacion/:asignacionId/createChecklist' element={<ChecklistCreateView />}  />
                     <Route path='/asignacion/:asignacionId/createChecklist/:checklistId/uploadImages' element={<ChecklistImageUploadView />}  />
                     <Route path='/asignacion/:asignacionId/editChecklist/:checklistId' element={<ChecklistEditView />}  />
+                    <Route path='/asignaciones-date' element={<CalendarView />}  />
                     <Route path='/users' element={<UsersView />}  />
                     <Route path='/users/register' element={<RegisterView />}  />
                     <Route path='/users/:userId/edit' element={<EditUserView />}  />

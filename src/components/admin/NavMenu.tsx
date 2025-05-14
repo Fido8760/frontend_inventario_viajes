@@ -42,6 +42,10 @@ export default function NavMenu({name, lastname, rol}: NavMenuProps) {
                     to='/?page=1'
                     className='block p-2 hover:text-purple-950'
                 >Asignaciones</Link>
+                <Link
+                    to='/asignaciones-date'
+                    className='block p-2 hover:text-purple-950'
+                >Calendario</Link>
                 {rol === 1 && (
                     <Link
                         to='/users'
