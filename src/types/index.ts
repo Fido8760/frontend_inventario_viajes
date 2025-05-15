@@ -140,6 +140,8 @@ const apiPaginatedAsignacionItemSchema = z.object({
   operador: apiPaginatedOperadorSchema  // <-- Usa schema específico de API
 })
 
+export type ApiAsignacionItem = z.infer<typeof apiPaginatedAsignacionItemSchema>
+
 export const asignacionPaginationApiSchema = z.object({
   count: z.number(),
   rows: z.array(apiPaginatedAsignacionItemSchema) // <-- Usa el schema de item correcto
