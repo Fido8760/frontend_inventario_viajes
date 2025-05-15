@@ -79,6 +79,22 @@ export async function getAsignaciones(take: number, skip: number) {
     }
 }
 
+export async function getAsignacionesDate(date: string) {
+    const url = `/assignments?asignacionDate=${date}`
+    
+    try {
+        const { data } = await api(url)
+        const response = asignacionPaginationApiSchema.safeParse(data)
+        if(response.success) {
+            return response.data
+        }
+    } catch (error) {
+        if(isAxiosError(error) && error.response) {
+            throw new Error(error.response.data.error)
+        }
+    }
+}
+
 type CrearAsignacionResponse = {
     message: string;
     id: number;
