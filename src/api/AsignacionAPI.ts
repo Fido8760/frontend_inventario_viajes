@@ -95,6 +95,22 @@ export async function getAsignacionesDate(date: string) {
     }
 }
 
+export async function getAsignacionesSearch(search: string) {
+    const url = `/assignments?search=${search}`
+    
+    try {
+        const { data } = await api(url)
+        const response = asignacionPaginationApiSchema.safeParse(data)
+        if(response.success) {
+            return response.data
+        }
+    } catch (error) {
+        if(isAxiosError(error) && error.response) {
+            throw new Error(error.response.data.error)
+        }
+    }
+}
+
 type CrearAsignacionResponse = {
     message: string;
     id: number;
