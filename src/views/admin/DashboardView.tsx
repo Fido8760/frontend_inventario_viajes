@@ -4,26 +4,33 @@ import Swal from "sweetalert2";
 import { EllipsisVerticalIcon } from "@heroicons/react/20/solid";
 import { Link, useNavigate, useSearchParams } from "react-router-dom";
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
-import { deleteAsignacion, getAsignaciones } from "../../api/AsignacionAPI";
+import { deleteAsignacion, getAsignaciones, getAsignacionesSearch } from "../../api/AsignacionAPI";
 import { formatDate } from "../../utils/formatDate";
 import { toast } from "react-toastify";
 import { isValidPage } from "../../utils/valdateParams";
 import Pagination from "../../components/ui/Pagination";
 import { useAuth } from "../../hooks/useAuth";
+import { useDebounce } from "../../hooks/useDebounce";
 
 export default function DashboardView() {
     const [searchParams] = useSearchParams();
     const navigate = useNavigate();
     const [shouldRedirect, setShouldRedirect] = useState(false);
     const { data: authenticatedUser } = useAuth();
+    const [searchTerm, setSearchTerm] = useState("");
 
     const page = +searchParams.get("page")!;
     const productsPerPage = 5;
     const skip = (page - 1) * productsPerPage;
 
+    const debouncedSearchTerm = useDebounce(searchTerm, 500);
+
     const { data, isLoading } = useQuery({
-        queryKey: ["asignaciones", page],
-        queryFn: () => getAsignaciones(productsPerPage, skip),
+        queryKey: ["asignaciones", page, debouncedSearchTerm],
+        queryFn: () => 
+            debouncedSearchTerm 
+                ? getAsignacionesSearch(debouncedSearchTerm) 
+                : getAsignaciones(productsPerPage, skip),
     });
 
     const queryClient = useQueryClient();
@@ -35,24 +42,23 @@ export default function DashboardView() {
         },
         onSuccess: (data) => {
             toast.success(data);
-            queryClient.invalidateQueries({ queryKey: ["asignaciones", page] });
+            queryClient.invalidateQueries({ queryKey: ["asignaciones"] });
         },
     });
 
-    // Manejo de redirecciones en useEffect
     useEffect(() => {
         if (!isValidPage(page)) {
             setShouldRedirect(true);
             return;
         }
 
-        if (data) {
+        if (data && !debouncedSearchTerm) {
             const totalPages = Math.ceil(data.count / productsPerPage);
             if (page > totalPages) {
                 setShouldRedirect(true);
             }
         }
-    }, [page, data]);
+    }, [page, data, debouncedSearchTerm]);
 
     useEffect(() => {
         if (shouldRedirect) {
@@ -78,26 +84,44 @@ export default function DashboardView() {
         }
     };
 
-    if (isLoading) return "Cargando";
-
+    if (isLoading) return "Cargando...";
     if (!data) return null;
 
-    const totalPages = Math.ceil(data.count / productsPerPage);
+    const totalPages = debouncedSearchTerm ? 1 : Math.ceil(data.count / productsPerPage);
 
     return (
         <>
-            <h1 className="text-3xl font-bold">Inventario de Viajes</h1>
-            <p className="text-xl font-light text-gray-500 mt-5">
-                Maneja y Administra los Checklist de las unidades
-            </p>
-            <nav className="my-5">
-                <Link
-                    className="bg-blue-800 hover:bg-blue-900 rounded-md px-10 py-3 text-white text-xl font-bold cursor-pointer transition-colors"
-                    to={"/asignacion/create"}
-                >
-                    Crear Checklist
-                </Link>
-            </nav>
+            <div className="flex flex-col md:flex-row md:justify-between md:items-center gap-4">
+                <div className="order-1 md:order-none">
+                    <h1 className="text-2xl md:text-3xl font-bold">Inventario de Viajes</h1>
+                    <p className="text-lg md:text-xl font-light text-gray-500 mt-1 md:mt-2">
+                        Maneja y Administra los Checklist de las unidades
+                    </p>
+                </div>
+                
+                <div className="relative w-full md:w-1/3 order-3 md:order-none">
+                    <div className="absolute inset-y-0 left-0 flex items-center pl-3 pointer-events-none">
+
+                    </div>
+                    <input
+                        type="text"
+                        className="block w-full p-2 md:p-3 pl-10 text-sm text-gray-900 border border-gray-300 rounded-lg bg-gray-50 focus:ring-blue-500 focus:border-blue-500"
+                        placeholder="Buscar por unidad, placas, operador..."
+                        value={searchTerm}
+                        onChange={(e) => setSearchTerm(e.target.value)}
+                    />
+                </div>
+
+                <nav className="order-2 md:order-none my-2 md:my-0">
+                    <Link
+                        className="inline-block w-full md:w-auto text-center bg-blue-800 hover:bg-blue-900 rounded-md px-6 md:px-10 py-2 md:py-3 text-white text-lg md:text-xl font-bold cursor-pointer transition-colors"
+                        to={"/asignacion/create"}
+                    >
+                        Crear Checklist
+                    </Link>
+                </nav>
+            </div>
+
             {data.rows.length ? (
                 <>
                     <ul
@@ -193,10 +217,14 @@ export default function DashboardView() {
                             </li>
                         ))}
                     </ul>
-                    <Pagination page={page} totalPages={totalPages} />
+                    
+                    {/* Paginación solo visible cuando no hay búsqueda activa */}
+                    {!debouncedSearchTerm && <Pagination page={page} totalPages={totalPages} />}
                 </>
             ) : (
-                <p className="text-center py-20">No hay Asignaciones</p>
+                <p className="text-center py-20">
+                    {debouncedSearchTerm ? "No se encontraron resultados" : "No hay Asignaciones"}
+                </p>
             )}
         </>
     );
