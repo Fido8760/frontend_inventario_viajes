@@ -69,6 +69,7 @@ export async function getAsignaciones(take: number, skip: number) {
         const url = `/assignments?take=${take}&skip=${skip}`
         const { data } = await api(url)
         const response = asignacionPaginationApiSchema.safeParse(data)
+        console.log(response)
         if(response.success) {
             return response.data
         }

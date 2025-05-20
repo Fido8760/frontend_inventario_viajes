@@ -126,18 +126,24 @@ const apiPaginatedOperadorSchema = z.object({
   apellido_m: z.string()
 });
 
+const apiChecklistInfoSchema = z.object({
+  id: z.number(),
+  
+});
+
 const apiPaginatedAsignacionItemSchema = z.object({
   id: z.number(),
   unidadId: z.number(),
-  cajaId: z.number().nullable(), // <-- Coincide con API (null posible)
+  cajaId: z.number().nullable(),
   operadorId: z.number(),
-  createdAt: z.string().datetime(), // O z.coerce.date()
-  updatedAt: z.string().datetime(), // O z.coerce.date()
+  createdAt: z.string().datetime(), 
+  updatedAt: z.string().datetime(), 
   userId: z.number(),
-  usuario: apiPaginatedUsuarioSchema,   // <-- Usa schema específico de API
-  unidad: apiPaginatedUnidadSchema,    // <-- Usa schema específico de API
-  caja: apiPaginatedCajaSchema.nullable(), // <-- Usa schema específico de API y permite null
-  operador: apiPaginatedOperadorSchema  // <-- Usa schema específico de API
+  usuario: apiPaginatedUsuarioSchema, 
+  unidad: apiPaginatedUnidadSchema,  
+  caja: apiPaginatedCajaSchema.nullable(), 
+  operador: apiPaginatedOperadorSchema,  
+  checklists: z.array(apiChecklistInfoSchema).optional()
 })
 
 export type ApiAsignacionItem = z.infer<typeof apiPaginatedAsignacionItemSchema>
