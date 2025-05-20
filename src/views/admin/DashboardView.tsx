@@ -33,6 +33,7 @@ export default function DashboardView() {
                 : getAsignaciones(productsPerPage, skip),
     });
 
+
     const queryClient = useQueryClient();
 
     const { mutate } = useMutation({
@@ -155,11 +156,18 @@ export default function DashboardView() {
                                             {asignacion.operador.apellido_m}
                                         </p>
                                         <p className="text-sm text-gray-400">
-                                            Checklist Realizado por: {asignacion.usuario.name} {asignacion.usuario.lastname}
+                                            Asignación Realizada por: {asignacion.usuario.name} {asignacion.usuario.lastname}
                                         </p>
                                         <p className="text-sm text-gray-400">
                                             Creado el {formatDate(asignacion.createdAt)}
                                         </p>
+                                        {asignacion.checklists?.length ? (
+                                            <p></p>
+                                        ) : (
+                                            <p className="text-sm text-red-400">
+                                                No tiene checklists completo
+                                            </p>
+                                        )}
                                     </div>
                                 </div>
                                 <div className="flex shrink-0 items-center gap-x-6">
