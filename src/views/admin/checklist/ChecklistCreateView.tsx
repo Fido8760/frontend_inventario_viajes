@@ -112,9 +112,21 @@ export default function ChecklistCreateView() {
             .filter((seccion) => seccion.preguntas.length > 0);
     }, [parsedPlantilla, asignacionData]);
     
-    const { handleSubmit, formState: { errors }, control, reset, watch } = useForm<ChecklistFormData>({
+    const { handleSubmit, formState: { errors, isDirty }, control, reset, watch } = useForm<ChecklistFormData>({
         resolver: zodResolver(checklistValidationSchema),
-    });
+    })
+
+    useEffect(() => {
+        const handleBeforeUnload = (event: BeforeUnloadEvent) => {
+            if (isDirty) {
+                event.preventDefault();
+            }
+        };
+        window.addEventListener('beforeunload', handleBeforeUnload);
+        return () => {
+            window.removeEventListener('beforeunload', handleBeforeUnload);
+        };
+    }, [isDirty]);
 
     useEffect(() => {
         if (!isLoadingAsignacion && asignacionId && dynamicFormStorageKey && seccionesFiltradas.length > 0) {
