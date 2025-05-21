@@ -56,7 +56,7 @@ export default function CrearAsgnacion() {
         onSuccess: (data) => {
             if(data) {
                 toast.success(data.message)
-                navigate(`/asignacion/${data.id}/createChecklist`)
+                navigate(`/asignacion/${data.id}/createChecklist`, { replace: true })
             }
         }
     })
