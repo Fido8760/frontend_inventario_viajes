@@ -161,7 +161,7 @@ export default function DashboardView() {
                                         <p className="text-sm text-gray-400">
                                             Creado el {formatDate(asignacion.createdAt)}
                                         </p>
-                                        {asignacion.checklists?.length ? (
+                                        {asignacion.checklist?.id ? (
                                             <p></p>
                                         ) : (
                                             <p className="text-sm text-red-400">

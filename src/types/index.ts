@@ -143,7 +143,7 @@ const apiPaginatedAsignacionItemSchema = z.object({
   unidad: apiPaginatedUnidadSchema,  
   caja: apiPaginatedCajaSchema.nullable(), 
   operador: apiPaginatedOperadorSchema,  
-  checklists: z.array(apiChecklistInfoSchema).optional()
+  checklist: apiChecklistInfoSchema.nullable().optional()
 })
 
 export type ApiAsignacionItem = z.infer<typeof apiPaginatedAsignacionItemSchema>
@@ -330,13 +330,12 @@ export const datosChecklistEnAsignacionSchema = z.object({
   id: z.number(),
   asignacionId: z.number(),
   respuestas: respuestaChecklistSchema,
-  createdAt: z.string().datetime(), // Incluye timestamps del checklist
-  updatedAt: z.string().datetime(), // Incluye timestamps del checklist
-  imagenes: z.array(imagenEnChecklistSchema), // Usa el schema de imagen
+  createdAt: z.string().datetime(), 
+  updatedAt: z.string().datetime(), 
+  imagenes: z.array(imagenEnChecklistSchema),
 });
 
-// --- Schema PRINCIPAL para el objeto 'asignacion' devuelto por getAsignacionById ---
-// Este SÍ debe incluir el campo 'checklists'
+
 export const asignacionByIdApiResponseSchema = z.object({
   id: z.number(),
   unidadId: z.number(),
@@ -345,21 +344,17 @@ export const asignacionByIdApiResponseSchema = z.object({
   userId: z.number(),
   createdAt: z.string(),
   updatedAt: z.string(),
-  // Usa los schemas específicos definidos arriba que coinciden con la respuesta
   usuario: usuarioEnAsignacionSchema,
   unidad: unidadEnAsignacionSchema,
-  caja: cajaEnAsignacionSchema.nullable(), // Objeto caja completo, o null
+  caja: cajaEnAsignacionSchema.nullable(),
   operador: operadorEnAsignacionSchema,
-  // Incluye el array de checklists usando el schema correcto
-  checklists: z.array(datosChecklistEnAsignacionSchema),
+  checklist: datosChecklistEnAsignacionSchema.nullable(),
 });
 
-// Tipo inferido para usar en el frontend
 export type AsignacionByIdApiResponse = z.infer<typeof asignacionByIdApiResponseSchema>;
 
-// --- Schema Opcional para TODA la respuesta (si incluye 'message') ---
 export const fullApiAsignacionResponseSchema = z.object({
-  message: z.string().optional(), // Hacer opcional por si GET no lo trae
+  message: z.string().optional(),
   asignacion: asignacionByIdApiResponseSchema,
 });
 export type FullApiAsignacionResponse = z.infer<typeof fullApiAsignacionResponseSchema>;

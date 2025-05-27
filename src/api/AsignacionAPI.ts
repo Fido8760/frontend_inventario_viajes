@@ -141,11 +141,6 @@ export async function getAsignacionById(id: AsignacionCompleta['id']) {
         const result = asignacionByIdApiResponseSchema.safeParse(data)
         if(result.success) {
             return result.data
-        } else {
-            // ¡Fallo! Los datos no coinciden con el schema.
-            console.error("Error de Validación Zod (safeParse):", result.error.errors); // Muestra los detalles del error
-            // Lanzar un error para que React Query lo detecte
-            throw new Error("Los datos recibidos de la API no tienen el formato esperado.");
         }
     } catch (error) {
         if(isAxiosError(error) && error.response) {

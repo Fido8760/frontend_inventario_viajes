@@ -34,7 +34,7 @@ export default function ChecklistDetailsView() {
         },
     });
 
-    const firstChecklist = data?.checklists?.[0];
+    const firstChecklist = data?.checklist;
     const checklistIdParaAcciones = firstChecklist?.id;
 
     // --- Mutación para Eliminar Checklist ---
@@ -137,8 +137,6 @@ export default function ChecklistDetailsView() {
                         </>
                     )}
                     </nav>
-
-                    {/* Muestra detalles (incluso si no hay checklist aún) */}
                     <DetallesAsigancion
                         data={data}
                     />

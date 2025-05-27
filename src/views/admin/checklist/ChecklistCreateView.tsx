@@ -146,7 +146,7 @@ export default function ChecklistCreateView() {
                         ) as ChecklistFormData['respuestas']['preguntas']
                     }
                 };
-                console.log("Inicializando con valores por defecto calculados:", calculatedDefaults);
+                //console.log("Inicializando con valores por defecto calculados:", calculatedDefaults);
                 reset(calculatedDefaults);
             }
         } else if (!isLoadingAsignacion && asignacionId && seccionesFiltradas.length === 0 && asignacionData) {
@@ -237,7 +237,7 @@ export default function ChecklistCreateView() {
     };
 
     const handleValidationErrors = (errors: FieldErrors<ChecklistFormData>) => {
-        console.error("Errores de Validación (desde handleSubmit):", errors);
+        //console.error("Errores de Validación (desde handleSubmit):", errors);
         const preguntasErrors = errors.respuestas?.preguntas;
         let firstErrorMessage = "Por favor, revisa los campos marcados.";
 
