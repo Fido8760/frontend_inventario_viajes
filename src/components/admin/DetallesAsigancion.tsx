@@ -3,6 +3,8 @@ import { AsignacionByIdApiResponse, PreguntaRespuesta } from '../../types';
 import plantillaCompleta from '../../views/admin/checklist/preguntas.json';
 import { exportChecklistToPdf } from '../../utils/exportPDF';
 import { toast } from 'react-toastify';
+import { formatDate } from '../../utils/formatDate';
+import { Link } from 'react-router-dom';
 
 type DetalleAsignacionProps = {
     data: AsignacionByIdApiResponse;
@@ -10,8 +12,7 @@ type DetalleAsignacionProps = {
 
 // --- Componente Principal ---
 const DetalleAsignacion = ({ data }: DetalleAsignacionProps) => {
-    // Extracción de datos principales
-    const ultimoChecklist = data.checklists?.[0];
+    const ultimoChecklist = data.checklist;
     const respuestasGuardadas = ultimoChecklist?.respuestas; // El objeto { secciones: [...] } guardado en la BD
     const imagenes = ultimoChecklist?.imagenes;
     const tipoUnidadActual = data.unidad?.tipo_unidad; // El tipo de unidad actual de la asignación
@@ -61,10 +62,10 @@ const DetalleAsignacion = ({ data }: DetalleAsignacionProps) => {
                     <InfoItem label="Operador" value={`${data.operador?.nombre ?? ''} ${data.operador?.apellido_p ?? ''} ${data.operador?.apellido_m ?? ''}`.trim() || 'N/A'} />
                 </div>
                 <div className="mt-4 grid grid-cols-2 gap-4">
-                    <InfoItem label="Fecha Creación" value={data.createdAt ? new Date(data.createdAt).toLocaleDateString() : 'N/A'} />
-                    <InfoItem label="Fecha Actualización" value={data.updatedAt ? new Date(data.updatedAt).toLocaleDateString() : 'N/A'} />
-                    <InfoItem label="Vigencia Licencia" value={data.operador?.vigencia_lic ?? 'N/A'} />
-                    <InfoItem label="Vigencia Apto Médico" value={data.operador?.vigencia_apto ?? 'N/A'} />
+                    <InfoItem label="Fecha Creación" value={data.createdAt ? formatDate(data.createdAt) : 'N/A'} />
+                    <InfoItem label="Fecha Actualización" value={data.updatedAt ? formatDate(data.updatedAt) : 'N/A'} />
+                    <InfoItem label="Vigencia Licencia" value={formatDate(data.operador?.vigencia_lic) ?? 'N/A'} />
+                    <InfoItem label="Vigencia Apto Médico" value={formatDate(data.operador?.vigencia_apto) ?? 'N/A'} />
                 </div>
             </div>
 
@@ -142,7 +143,7 @@ const DetalleAsignacion = ({ data }: DetalleAsignacionProps) => {
 
             {/* Sección de Imágenes (se muestra solo si hay un checklist con imágenes) */}
             {imagenes && Array.isArray(imagenes) && imagenes.length > 0 ? (
-                 <div className="bg-white rounded-lg shadow-md p-6 mt-6"> {/* Añadido margen superior */}
+                 <div className="bg-white rounded-lg shadow-md p-6 mt-6">
                      <h2 className="text-xl font-semibold mb-4 border-b pb-2">Imágenes Adjuntas</h2>
                     <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
                         {imagenes.map((imagen) => (
@@ -165,6 +166,15 @@ const DetalleAsignacion = ({ data }: DetalleAsignacionProps) => {
                      <div className="bg-white rounded-lg shadow-md p-6 mt-6">
                          <h2 className="text-xl font-semibold mb-4 border-b pb-2">Imágenes Adjuntas</h2>
                          <p className="text-center text-gray-500 py-4">No hay imágenes adjuntas.</p>
+                         <Link
+                            // Esta ruta debe coincidir o ser compatible con la que usas después de crear el checklist
+                            // data.id es el asignacionId
+                            // ultimoChecklist.id es el checklistId
+                            to={`/asignacion/${data.id}/createChecklist/${ultimoChecklist.id}/uploadImages`} 
+                            className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-md transition-colors text-sm"
+                        >
+                            Subir Imágenes
+                        </Link>
                      </div>
                  )
             )}
