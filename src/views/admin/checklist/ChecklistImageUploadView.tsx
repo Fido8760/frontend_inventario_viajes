@@ -29,6 +29,17 @@ const optionalImageFields = [
     { id: "opcional_8", label: "Imagen Adicional 8 (Opcional)" },
 ];
 
+// Función auxiliar para estilos del botón
+function getButtonStyle(_fieldId: string, isUploading: boolean, isUploaded: boolean) {
+    if (isUploading) {
+        return "bg-yellow-100 border-yellow-500 text-yellow-700 cursor-not-allowed";
+    }
+    if (isUploaded) {
+        return "bg-green-100 border-green-500 text-green-700";
+    }
+    return "bg-slate-100 border-gray-300 hover:bg-slate-200 cursor-pointer";
+}
+
 export default function ChecklistImageUploadView() {
     const params = useParams();
     const asignacionId = +params.asignacionId!;
@@ -225,13 +236,3 @@ export default function ChecklistImageUploadView() {
     );
 }
 
-// Función auxiliar para estilos del botón
-function getButtonStyle(fieldId: string, isUploading: boolean, isUploaded: boolean) {
-    if (isUploading) {
-        return "bg-yellow-100 border-yellow-500 text-yellow-700 cursor-not-allowed";
-    }
-    if (isUploaded) {
-        return "bg-green-100 border-green-500 text-green-700";
-    }
-    return "bg-slate-100 border-gray-300 hover:bg-slate-200 cursor-pointer";
-}
