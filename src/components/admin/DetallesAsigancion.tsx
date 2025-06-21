@@ -161,15 +161,12 @@ const DetalleAsignacion = ({ data }: DetalleAsignacionProps) => {
                     </div>
                 </div>
             ) : (
-                 // Mostrar sección pero indicar que no hay imágenes SI hay un checklist realizado
+
                  ultimoChecklist && (
                      <div className="bg-white rounded-lg shadow-md p-6 mt-6">
                          <h2 className="text-xl font-semibold mb-4 border-b pb-2">Imágenes Adjuntas</h2>
                          <p className="text-center text-gray-500 py-4">No hay imágenes adjuntas.</p>
                          <Link
-                            // Esta ruta debe coincidir o ser compatible con la que usas después de crear el checklist
-                            // data.id es el asignacionId
-                            // ultimoChecklist.id es el checklistId
                             to={`/asignacion/${data.id}/createChecklist/${ultimoChecklist.id}/uploadImages`} 
                             className="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-2 px-4 rounded-md transition-colors text-sm"
                         >
@@ -194,7 +191,6 @@ const DetalleAsignacion = ({ data }: DetalleAsignacionProps) => {
     );
 };
 
-// --- Componentes y Funciones Helper (Sin cambios respecto a la versión anterior) ---
 
 type InfoItemProps = {
     label: string;

@@ -4,6 +4,7 @@ import { toast } from "react-toastify";
 import { useState, useEffect } from "react";
 import imageCompression from 'browser-image-compression';
 import { uploadImage } from "../../../api/ChecklistAPI";
+import SignaturePad from "../../../components/admin/SignaturePad";
 
 // Campos obligatorios
 const requiredImageFields = [
@@ -12,9 +13,9 @@ const requiredImageFields = [
     { id: "lateral_izquierdo", label: "Fotografía Lateral Izquierda de la Unidad" },
     { id: "documentacion", label: "Fotografía de la Documentación" },
     { id: "interior", label: "Fotografía del Interior de la Cabina de la Unidad" },
-    { id: "remolque_lateral_derecho", label: "Fotografía del Lateral Derecho del Remolque" },
-    { id: "remolque_lateral_izquierdo", label: "Fotografía del Lateral Izquierdo del Remolque" },
-    { id: "remolque_puertas", label: "Fotografía de las Puertas del Remolque" },
+    { id: "remolque_lateral_derecho", label: "Fotografía del Lateral Derecho del Remolque o Caja" },
+    { id: "remolque_lateral_izquierdo", label: "Fotografía del Lateral Izquierdo del Remolque o Caja" },
+    { id: "remolque_puertas", label: "Fotografía de las Puertas del Remolque o Caja" },
 ];
 
 // Campos opcionales
@@ -27,6 +28,14 @@ const optionalImageFields = [
     { id: "opcional_6", label: "Imagen Adicional 6 (Opcional)" },
     { id: "opcional_7", label: "Imagen Adicional 7 (Opcional)" },
     { id: "opcional_8", label: "Imagen Adicional 8 (Opcional)" },
+    { id: "opcional_9", label: "Imagen Adicional 9 (Opcional)" },
+    { id: "opcional_10", label: "Imagen Adicional 10 (Opcional)" },
+    { id: "opcional_11", label: "Imagen Adicional 11 (Opcional)" },
+    { id: "opcional_12", label: "Imagen Adicional 12 (Opcional)" },
+    { id: "opcional_13", label: "Imagen Adicional 13 (Opcional)" },
+    { id: "opcional_14", label: "Imagen Adicional 14 (Opcional)" },
+    { id: "opcional_15", label: "Imagen Adicional 15 (Opcional)" },
+    { id: "opcional_16", label: "Imagen Adicional 16 (Opcional)" },
 ];
 
 // Función auxiliar para estilos del botón
@@ -55,7 +64,6 @@ export default function ChecklistImageUploadView() {
         savedState ? JSON.parse(savedState).uploadedFields : {}
     );
 
-    // Guardar estado en localStorage
     useEffect(() => {
         const stateToSave = JSON.stringify({ imageUrls, uploadedFields });
         localStorage.setItem(`uploadProgress_${checklistId}`, stateToSave);
@@ -112,13 +120,27 @@ export default function ChecklistImageUploadView() {
     };
 
     // Solo requiere las 8 obligatorias para completar
-    const isChecklistComplete = requiredImageFields.every(field => uploadedFields[field.id]);
+    const isChecklistComplete = requiredImageFields.every(field => uploadedFields[field.id]) && uploadedFields["firma"];
+
 
     const handleFinalizeChecklist = () => {
         localStorage.setItem("checklistCompleted", "true");
         // Limpiar estado guardado
         localStorage.removeItem(`uploadProgress_${checklistId}`);
-    };
+    }
+
+    const handleSaveSignature = (file: File) => {
+        const data = { file, asignacionId, checklistId, fieldId: "firma"}
+        uploadImageMutation.mutate(data)
+
+        const reader = new FileReader()
+        reader.onloadend = () => {
+            setImageUrls( prev => ({ ...prev, firma: reader.result as string}))
+            setUploadedFields( prev => ({ ...prev, firma: true}))
+        }
+
+        reader.readAsDataURL(file)
+    }
 
     return (
         <div className="max-w-5xl mx-auto">
@@ -220,6 +242,21 @@ export default function ChecklistImageUploadView() {
                     ))}
                 </div>
             </div>
+
+            <div className="w-full md:w-full flex justify-center mb-6 md:mb-0 transition-all duration-300 ease-in-out ">
+                <SignaturePad onSave={handleSaveSignature} />
+            </div>
+            { imageUrls["firma"] && (
+                <div className="mt-4 text-center">
+                    <p className=" font-medium">Firma Guardada:</p>
+                    <img 
+                        src={imageUrls["firma"]} 
+                        alt="Firma del operador" 
+                        className="max-h-32 mx-auto border rounded mt-2"
+                    />
+                </div>
+            )}
+
 
             {isChecklistComplete && (
                 <div className="mt-8 flex justify-center">

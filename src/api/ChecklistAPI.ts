@@ -140,9 +140,10 @@ export type ChecklistImageAPI = {
     fieldId: string
 }
 
-export async function uploadImage({file, asignacionId, checklistId}: ChecklistImageAPI) {
+export async function uploadImage({file, asignacionId, checklistId, fieldId}: ChecklistImageAPI) {
   let formData = new FormData()
   formData.append('file', file)
+  formData.append('fieldId', fieldId)
   const url = `/assignments/${asignacionId}/checklist/${checklistId}/image`;
 
   try {
