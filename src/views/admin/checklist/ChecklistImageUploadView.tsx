@@ -1,9 +1,14 @@
 import { useMutation } from "@tanstack/react-query";
-import { useParams, Link, useNavigate } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import { useState, useEffect } from "react";
 import imageCompression from 'browser-image-compression';
+<<<<<<< Updated upstream
 import { uploadImage } from "../../../api/ChecklistAPI";
+=======
+import { uploadImage, finalizarChecklist } from "../../../api/ChecklistAPI";
+import SignaturePad from "../../../components/admin/SignaturePad";
+>>>>>>> Stashed changes
 
 // Campos obligatorios
 const requiredImageFields = [
@@ -48,13 +53,7 @@ export default function ChecklistImageUploadView() {
     useEffect(() => {
         const stateToSave = JSON.stringify({ imageUrls, uploadedFields });
         localStorage.setItem(`uploadProgress_${checklistId}`, stateToSave);
-    }, [imageUrls, uploadedFields, checklistId]);
-
-    useEffect(() => {
-        if (localStorage.getItem("checklistCompleted") === "true") {
-            navigate(`/asignacion/${asignacionId}/createChecklist/${checklistId}/uploadImages`, { replace: true });
-        }
-    }, [navigate, asignacionId, checklistId]);
+    }, [imageUrls, uploadedFields, checklistId])
 
     const uploadImageMutation = useMutation({
         mutationFn: uploadImage,
@@ -65,7 +64,20 @@ export default function ChecklistImageUploadView() {
             toast.success(data.message);
             setUploadedFields(prev => ({ ...prev, [variables.fieldId]: true }));
         },
-    });
+    })
+
+    const finalizarChecklistMutation = useMutation({
+        mutationFn: finalizarChecklist,
+        onError: (error) => {
+            toast.error(error.message)
+        },
+        onSuccess: (data) => {
+            toast.success(data.message)
+            localStorage.removeItem(`uploadProgress_${checklistId}`);
+            localStorage.removeItem("checklistCompleted");
+            navigate('/?page=1', { replace: true})
+        }
+    })
 
     const handleChange = async (e: React.ChangeEvent<HTMLInputElement>, fieldId: string) => {
         const files = e.target.files;
@@ -103,11 +115,31 @@ export default function ChecklistImageUploadView() {
     // Solo requiere las 8 obligatorias para completar
     const isChecklistComplete = requiredImageFields.every(field => uploadedFields[field.id]);
 
+<<<<<<< Updated upstream
     const handleFinalizeChecklist = () => {
         localStorage.setItem("checklistCompleted", "true");
         // Limpiar estado guardado
         localStorage.removeItem(`uploadProgress_${checklistId}`);
     };
+=======
+    const handleFinalizeChecklist = (e?: React.MouseEvent<HTMLButtonElement>) => {
+        e?.preventDefault();
+        finalizarChecklistMutation.mutate({asignacionId, checklistId})
+    }
+
+    const handleSaveSignature = (file: File) => {
+        const data = { file, asignacionId, checklistId, fieldId: "firma"}
+        uploadImageMutation.mutate(data)
+
+        const reader = new FileReader()
+        reader.onloadend = () => {
+            setImageUrls( prev => ({ ...prev, firma: reader.result as string}))
+            setUploadedFields( prev => ({ ...prev, firma: true}))
+        }
+
+        reader.readAsDataURL(file)
+    }
+>>>>>>> Stashed changes
 
     return (
         <div className="max-w-5xl mx-auto">
@@ -212,13 +244,13 @@ export default function ChecklistImageUploadView() {
 
             {isChecklistComplete && (
                 <div className="mt-8 flex justify-center">
-                    <Link 
-                        to="/?page=1" 
+                    <button 
                         className="bg-blue-800 hover:bg-blue-900 text-white font-bold py-3 px-8 rounded-lg text-lg transition-all"
                         onClick={handleFinalizeChecklist}
+                        disabled={finalizarChecklistMutation.isPending}
                     >
-                        Finalizar Checklist
-                    </Link>
+                        {finalizarChecklistMutation.isPending ? 'Finalizando...' : 'Finalizar Checklist'}
+                    </button>
                 </div>
             )}
         </div>
