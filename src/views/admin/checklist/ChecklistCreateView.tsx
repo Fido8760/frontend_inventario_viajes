@@ -2,7 +2,7 @@ import { FieldErrors, useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { toast } from 'react-toastify';
 import { useNavigate, useParams } from 'react-router-dom';
-import { useMutation, useQuery } from '@tanstack/react-query';
+import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import debounce from 'lodash.debounce'; 
 import { useEffect, useMemo, useCallback } from 'react';
 import ChecklistForm from '../../../components/admin/ChecklistForm';
@@ -66,6 +66,7 @@ export default function ChecklistCreateView() {
     const navigate = useNavigate();
     const params = useParams();
     const asignacionId = params.asignacionId ? +params.asignacionId : undefined;
+    const queryClient = useQueryClient()
 
     const dynamicFormStorageKey = useMemo(() => {
         return asignacionId ? `${FORM_STORAGE_KEY_PREFIX}${asignacionId}` : '';
@@ -178,21 +179,23 @@ export default function ChecklistCreateView() {
     }, [watchedValues, debouncedSave, isLoadingAsignacion, dynamicFormStorageKey]);
 
     const { mutate } = useMutation({
-        mutationFn: postChecklist,
-        onError: (error) => {
-            toast.error(error.message);
-        },
-        onSuccess: (data) => {
-            if (data?.id) {
-                toast.success(data.message);
-                if (dynamicFormStorageKey) {
-                    localStorage.removeItem(dynamicFormStorageKey); // Limpiar localStorage
-                    //console.log(`LocalStorage (${dynamicFormStorageKey}) limpiado después del envío.`);
-                }
+    mutationFn: postChecklist,
+    onError: (error) => {
+        toast.error(error.message);
+    },
+    onSuccess: (data) => {
+        if (data?.id) {
+            toast.success(data.message);
+            localStorage.removeItem(dynamicFormStorageKey);
 
-                navigate(`/asignacion/${asignacionId}/createChecklist/${data.id}/uploadImages`);
+            // 👇 Invalidar y refetchear los datos de asignación
+            queryClient.invalidateQueries({
+                queryKey: ['Asignacion', asignacionId]
+            });
+
+            navigate(`/asignacion/${asignacionId}/createChecklist/${data.id}/uploadImages`, { replace: true });
             } else {
-                toast.error("Error al guardar el checklist: no se recibió ID.")
+                toast.error("Error al guardar el checklist: no se recibió ID.");
             }
         }
     });
@@ -202,6 +205,20 @@ export default function ChecklistCreateView() {
             toast.error("ID de asignación no encontrado.");
             return;
         }
+
+        if (asignacionData?.checklist?.id && !asignacionData.checklist.completado) {
+            toast.info("Ya existe un checklist en proceso para esta asignación. Redirigiendo...");
+            localStorage.removeItem(dynamicFormStorageKey);
+            navigate(`/asignacion/${asignacionId}/createChecklist/${asignacionData.checklist.id}/uploadImages`, { replace: true });
+            return;
+        }
+
+        if (asignacionData?.checklist?.completado) {
+            toast.info("Este Checklist ya fue finalizado, no se puede crear otro");
+            navigate("/asignaciones", { replace: true });
+            return;
+        }
+
         if(!parsedPlantilla?.preguntas) {
             toast.error("Error interno: Plantilla de checklist no disponible");
             return;
@@ -283,6 +300,7 @@ export default function ChecklistCreateView() {
 
 
     const tipoUnidadActual = asignacionData.unidad.tipo_unidad;
+
 
     return (
         <>

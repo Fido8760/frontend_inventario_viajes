@@ -333,6 +333,7 @@ export const datosChecklistEnAsignacionSchema = z.object({
   createdAt: z.string().datetime(), 
   updatedAt: z.string().datetime(), 
   imagenes: z.array(imagenEnChecklistSchema),
+  completado: z.boolean()
 });
 
 
@@ -358,3 +359,8 @@ export const fullApiAsignacionResponseSchema = z.object({
   asignacion: asignacionByIdApiResponseSchema,
 });
 export type FullApiAsignacionResponse = z.infer<typeof fullApiAsignacionResponseSchema>;
+
+
+//------------- Finalizar el checklist ------------------
+
+export type ChecklistDataType = z.infer<typeof datosChecklistEnAsignacionSchema>

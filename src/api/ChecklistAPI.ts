@@ -158,3 +158,29 @@ export async function uploadImage({file, asignacionId, checklistId, fieldId}: Ch
     throw new Error("Error desconocido al subir la imagen");
   }
 }
+
+
+export type FinalizarChecklistArgs = {
+    asignacionId: number
+    checklistId: number
+}
+
+export type FinalizarChecklistSucccessData = {
+    message: string
+}
+
+export async function finalizarChecklist({asignacionId, checklistId}: FinalizarChecklistArgs) {
+      const url = `/assignments/${asignacionId}/checklist/${checklistId}/finalizar`;
+
+      try {
+        const { data } = await api.post<FinalizarChecklistSucccessData>(url)
+        console.log(data)
+        return data
+      } catch (error) {
+        if (isAxiosError(error) && error.response) {
+          throw new Error(error.response.data.error);
+        }
+        throw new Error("Error desconocido al finalizar el checklist");
+      }
+
+}
