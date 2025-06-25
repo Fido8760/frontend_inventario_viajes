@@ -215,7 +215,7 @@ export default function ChecklistCreateView() {
 
         if (asignacionData?.checklist?.completado) {
             toast.info("Este Checklist ya fue finalizado, no se puede crear otro");
-            navigate("/asignaciones", { replace: true });
+            navigate("/?page=1", { replace: true });
             return;
         }
 
