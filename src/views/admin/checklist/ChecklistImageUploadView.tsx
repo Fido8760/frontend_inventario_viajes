@@ -1,5 +1,5 @@
 import { useMutation } from "@tanstack/react-query";
-import { useParams, Link, useNavigate } from "react-router-dom";
+import { useParams, useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import { useState, useEffect } from "react";
 import imageCompression from 'browser-image-compression';
@@ -125,7 +125,7 @@ export default function ChecklistImageUploadView() {
             toast.success("Checklist finalizado correctamente");
             localStorage.setItem("checklistCompleted", "true");
             localStorage.removeItem(`uploadProgress_${checklistId}`);
-            navigate("/?page=1");
+            navigate("/?page=1", { replace: true });  // ¡Aquí el cambio importante!
         },
         onError: (error) => {
             toast.error(error.message);
@@ -135,19 +135,19 @@ export default function ChecklistImageUploadView() {
     // Solo requiere las 8 obligatorias para completar
     const isChecklistComplete = requiredImageFields.every(field => uploadedFields[field.id]) && uploadedFields["firma"];
 
-
-     const handleFinalizeChecklist = async (e: React.MouseEvent) => {
-        e.preventDefault(); // Previene la navegación del Link
+    const handleFinalizeChecklist = async () => {
         try {
             await finalizeChecklistMutation.mutateAsync({ 
                 asignacionId, 
                 checklistId 
             });
+            // La redirección ahora se maneja en onSuccess de la mutación
         } catch (error) {
             console.error("Error al finalizar:", error);
         }
     };
 
+     
     const handleSaveSignature = (file: File) => {
         const data = { file, asignacionId, checklistId, fieldId: "firma"}
         uploadImageMutation.mutate(data)
@@ -277,15 +277,17 @@ export default function ChecklistImageUploadView() {
             )}
 
 
-                   {isChecklistComplete && (
+                  {isChecklistComplete && (
                     <div className="mt-8 flex justify-center">
-                        <Link 
-                            to="/?page=1" 
-                            className="bg-blue-800 hover:bg-blue-900 text-white font-bold py-3 px-8 rounded-lg text-lg transition-all"
+                        <button
                             onClick={handleFinalizeChecklist}
+                            disabled={finalizeChecklistMutation.isPending}
+                            className={`bg-blue-800 hover:bg-blue-900 text-white font-bold py-3 px-8 rounded-lg text-lg transition-all ${
+                                finalizeChecklistMutation.isPending ? 'opacity-50 cursor-not-allowed' : ''
+                            }`}
                         >
                             {finalizeChecklistMutation.isPending ? 'Finalizando...' : 'Finalizar Checklist'}
-                        </Link>
+                        </button>
                     </div>
                 )}
         </div>
