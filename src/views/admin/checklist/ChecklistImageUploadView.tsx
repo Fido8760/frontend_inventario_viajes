@@ -3,12 +3,8 @@ import { useParams, useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import { useState, useEffect } from "react";
 import imageCompression from 'browser-image-compression';
-<<<<<<< Updated upstream
-import { uploadImage } from "../../../api/ChecklistAPI";
-=======
 import { uploadImage, finalizarChecklist } from "../../../api/ChecklistAPI";
 import SignaturePad from "../../../components/admin/SignaturePad";
->>>>>>> Stashed changes
 
 // Campos obligatorios
 const requiredImageFields = [
@@ -17,9 +13,9 @@ const requiredImageFields = [
     { id: "lateral_izquierdo", label: "Fotografía Lateral Izquierda de la Unidad" },
     { id: "documentacion", label: "Fotografía de la Documentación" },
     { id: "interior", label: "Fotografía del Interior de la Cabina de la Unidad" },
-    { id: "remolque_lateral_derecho", label: "Fotografía del Lateral Derecho del Remolque" },
-    { id: "remolque_lateral_izquierdo", label: "Fotografía del Lateral Izquierdo del Remolque" },
-    { id: "remolque_puertas", label: "Fotografía de las Puertas del Remolque" },
+    { id: "remolque_lateral_derecho", label: "Fotografía del Lateral Derecho del Remolque o Caja" },
+    { id: "remolque_lateral_izquierdo", label: "Fotografía del Lateral Izquierdo del Remolque o Caja" },
+    { id: "remolque_puertas", label: "Fotografía de las Puertas del Remolque o Caja" },
 ];
 
 // Campos opcionales
@@ -32,7 +28,26 @@ const optionalImageFields = [
     { id: "opcional_6", label: "Imagen Adicional 6 (Opcional)" },
     { id: "opcional_7", label: "Imagen Adicional 7 (Opcional)" },
     { id: "opcional_8", label: "Imagen Adicional 8 (Opcional)" },
+    { id: "opcional_9", label: "Imagen Adicional 9 (Opcional)" },
+    { id: "opcional_10", label: "Imagen Adicional 10 (Opcional)" },
+    { id: "opcional_11", label: "Imagen Adicional 11 (Opcional)" },
+    { id: "opcional_12", label: "Imagen Adicional 12 (Opcional)" },
+    { id: "opcional_13", label: "Imagen Adicional 13 (Opcional)" },
+    { id: "opcional_14", label: "Imagen Adicional 14 (Opcional)" },
+    { id: "opcional_15", label: "Imagen Adicional 15 (Opcional)" },
+    { id: "opcional_16", label: "Imagen Adicional 16 (Opcional)" },
 ];
+
+// Función auxiliar para estilos del botón
+function getButtonStyle(_fieldId: string, isUploading: boolean, isUploaded: boolean) {
+    if (isUploading) {
+        return "bg-yellow-100 border-yellow-500 text-yellow-700 cursor-not-allowed";
+    }
+    if (isUploaded) {
+        return "bg-green-100 border-green-500 text-green-700";
+    }
+    return "bg-slate-100 border-gray-300 hover:bg-slate-200 cursor-pointer";
+}
 
 export default function ChecklistImageUploadView() {
     const params = useParams();
@@ -49,11 +64,16 @@ export default function ChecklistImageUploadView() {
         savedState ? JSON.parse(savedState).uploadedFields : {}
     );
 
-    // Guardar estado en localStorage
     useEffect(() => {
         const stateToSave = JSON.stringify({ imageUrls, uploadedFields });
         localStorage.setItem(`uploadProgress_${checklistId}`, stateToSave);
-    }, [imageUrls, uploadedFields, checklistId])
+    }, [imageUrls, uploadedFields, checklistId]);
+
+    useEffect(() => {
+        if (localStorage.getItem("checklistCompleted") === "true") {
+            navigate(`/asignacion/${asignacionId}/createChecklist/${checklistId}/uploadImages`, { replace: true });
+        }
+    }, [navigate, asignacionId, checklistId]);
 
     const uploadImageMutation = useMutation({
         mutationFn: uploadImage,
@@ -64,20 +84,7 @@ export default function ChecklistImageUploadView() {
             toast.success(data.message);
             setUploadedFields(prev => ({ ...prev, [variables.fieldId]: true }));
         },
-    })
-
-    const finalizarChecklistMutation = useMutation({
-        mutationFn: finalizarChecklist,
-        onError: (error) => {
-            toast.error(error.message)
-        },
-        onSuccess: (data) => {
-            toast.success(data.message)
-            localStorage.removeItem(`uploadProgress_${checklistId}`);
-            localStorage.removeItem("checklistCompleted");
-            navigate('/?page=1', { replace: true})
-        }
-    })
+    });
 
     const handleChange = async (e: React.ChangeEvent<HTMLInputElement>, fieldId: string) => {
         const files = e.target.files;
@@ -112,20 +119,33 @@ export default function ChecklistImageUploadView() {
         }
     };
 
-    // Solo requiere las 8 obligatorias para completar
-    const isChecklistComplete = requiredImageFields.every(field => uploadedFields[field.id]);
+     const finalizeChecklistMutation = useMutation({
+            mutationFn: finalizarChecklist,
+                onSuccess: () => {
+                toast.success("Checklist finalizado correctamente");
+                localStorage.removeItem(`uploadProgress_${checklistId}`);
+                navigate("/?page=1", {replace: true}); // O donde quieras redirigir
+            },
+                onError: (error) => {
+                toast.error(error.message);
+            }
+        });
 
-<<<<<<< Updated upstream
-    const handleFinalizeChecklist = () => {
-        localStorage.setItem("checklistCompleted", "true");
-        // Limpiar estado guardado
-        localStorage.removeItem(`uploadProgress_${checklistId}`);
-    };
-=======
-    const handleFinalizeChecklist = (e?: React.MouseEvent<HTMLButtonElement>) => {
-        e?.preventDefault();
-        finalizarChecklistMutation.mutate({asignacionId, checklistId})
-    }
+
+    // Solo requiere las 8 obligatorias para completar
+    const isChecklistComplete = requiredImageFields.every(field => uploadedFields[field.id]) && uploadedFields["firma"];
+
+
+    const handleFinalizeChecklist = async () => {
+        try {
+            await finalizeChecklistMutation.mutateAsync({ 
+                asignacionId, 
+                checklistId 
+            });
+        } catch (error) {
+            console.error("Error al finalizar:", error);
+        }
+     };
 
     const handleSaveSignature = (file: File) => {
         const data = { file, asignacionId, checklistId, fieldId: "firma"}
@@ -139,7 +159,6 @@ export default function ChecklistImageUploadView() {
 
         reader.readAsDataURL(file)
     }
->>>>>>> Stashed changes
 
     return (
         <div className="max-w-5xl mx-auto">
@@ -242,28 +261,34 @@ export default function ChecklistImageUploadView() {
                 </div>
             </div>
 
-            {isChecklistComplete && (
+            <div className="w-full md:w-full flex justify-center mb-6 md:mb-0 transition-all duration-300 ease-in-out ">
+                <SignaturePad onSave={handleSaveSignature} />
+            </div>
+            { imageUrls["firma"] && (
+                <div className="mt-4 text-center">
+                    <p className=" font-medium">Firma Guardada:</p>
+                    <img 
+                        src={imageUrls["firma"]} 
+                        alt="Firma del operador" 
+                        className="max-h-32 mx-auto border rounded mt-2"
+                    />
+                </div>
+            )}
+
+
+             {isChecklistComplete && (
                 <div className="mt-8 flex justify-center">
-                    <button 
-                        className="bg-blue-800 hover:bg-blue-900 text-white font-bold py-3 px-8 rounded-lg text-lg transition-all"
-                        onClick={handleFinalizeChecklist}
-                        disabled={finalizarChecklistMutation.isPending}
-                    >
-                        {finalizarChecklistMutation.isPending ? 'Finalizando...' : 'Finalizar Checklist'}
-                    </button>
+                <button
+                    onClick={handleFinalizeChecklist}
+                    disabled={finalizeChecklistMutation.isPending}
+                    className={`bg-blue-800 hover:bg-blue-900 text-white font-bold py-3 px-8 rounded-lg text-lg transition-all ${
+                    finalizeChecklistMutation.isPending ? 'opacity-50 cursor-not-allowed' : ''
+                    }`}
+                >
+                    {finalizeChecklistMutation.isPending ? 'Finalizando...' : 'Finalizar Checklist'}
+                </button>
                 </div>
             )}
         </div>
     );
-}
-
-// Función auxiliar para estilos del botón
-function getButtonStyle(fieldId: string, isUploading: boolean, isUploaded: boolean) {
-    if (isUploading) {
-        return "bg-yellow-100 border-yellow-500 text-yellow-700 cursor-not-allowed";
-    }
-    if (isUploaded) {
-        return "bg-green-100 border-green-500 text-green-700";
-    }
-    return "bg-slate-100 border-gray-300 hover:bg-slate-200 cursor-pointer";
 }
