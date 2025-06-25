@@ -67,10 +67,14 @@ export async function getAsignaciones(take: number, skip: number) {
     
     try {
         const url = `/assignments?take=${take}&skip=${skip}`
+        console.log(url)
         const { data } = await api(url)
         const response = asignacionPaginationApiSchema.safeParse(data)
         if(response.success) {
             return response.data
+        }else {
+            console.error("Zod validation failed in production:", response.error);
+            throw new Error("Invalid data structure from server.");
         }
     } catch (error) {
         if(isAxiosError(error) && error.response) {

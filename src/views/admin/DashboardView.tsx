@@ -19,8 +19,9 @@ export default function DashboardView() {
     const { data: authenticatedUser } = useAuth();
     const [searchTerm, setSearchTerm] = useState("");
 
-    const page = +searchParams.get("page")!;
     const productsPerPage = 5;
+    const pageParam  = +searchParams.get("page")!;
+    const page = Math.max(1, Number(pageParam) || 1);
     const skip = (page - 1) * productsPerPage;
 
     const debouncedSearchTerm = useDebounce(searchTerm, 500);
