@@ -68,13 +68,6 @@ export default function DashboardView() {
         }
     }, [shouldRedirect, navigate]);
 
-    useEffect(() => {
-    console.log('Environment vars:', import.meta.env);
-        fetch(`${import.meta.env.VITE_API_URL}/assignments`)
-            .then(res => res.json())
-            .then(data => console.log('API test:', data))
-            .catch(err => console.error('API error:', err));
-    }, []);
 
     const handleDelete = async (asignacionIdToDelete: number) => {
         const result = await Swal.fire({
