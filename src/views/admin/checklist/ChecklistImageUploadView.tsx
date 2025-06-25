@@ -3,7 +3,7 @@ import { useParams, Link, useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import { useState, useEffect } from "react";
 import imageCompression from 'browser-image-compression';
-import { uploadImage } from "../../../api/ChecklistAPI";
+import { uploadImage, finalizarChecklist } from "../../../api/ChecklistAPI";
 import SignaturePad from "../../../components/admin/SignaturePad";
 
 // Campos obligatorios
@@ -119,15 +119,34 @@ export default function ChecklistImageUploadView() {
         }
     };
 
+    const finalizeChecklistMutation = useMutation({
+        mutationFn: finalizarChecklist,
+        onSuccess: () => {
+            toast.success("Checklist finalizado correctamente");
+            localStorage.setItem("checklistCompleted", "true");
+            localStorage.removeItem(`uploadProgress_${checklistId}`);
+            navigate("/?page=1");
+        },
+        onError: (error) => {
+            toast.error(error.message);
+        }
+    });
+
     // Solo requiere las 8 obligatorias para completar
     const isChecklistComplete = requiredImageFields.every(field => uploadedFields[field.id]) && uploadedFields["firma"];
 
 
-    const handleFinalizeChecklist = () => {
-        localStorage.setItem("checklistCompleted", "true");
-        // Limpiar estado guardado
-        localStorage.removeItem(`uploadProgress_${checklistId}`);
-    }
+     const handleFinalizeChecklist = async (e: React.MouseEvent) => {
+        e.preventDefault(); // Previene la navegación del Link
+        try {
+            await finalizeChecklistMutation.mutateAsync({ 
+                asignacionId, 
+                checklistId 
+            });
+        } catch (error) {
+            console.error("Error al finalizar:", error);
+        }
+    };
 
     const handleSaveSignature = (file: File) => {
         const data = { file, asignacionId, checklistId, fieldId: "firma"}
@@ -258,17 +277,17 @@ export default function ChecklistImageUploadView() {
             )}
 
 
-            {isChecklistComplete && (
-                <div className="mt-8 flex justify-center">
-                    <Link 
-                        to="/?page=1" 
-                        className="bg-blue-800 hover:bg-blue-900 text-white font-bold py-3 px-8 rounded-lg text-lg transition-all"
-                        onClick={handleFinalizeChecklist}
-                    >
-                        Finalizar Checklist
-                    </Link>
-                </div>
-            )}
+                   {isChecklistComplete && (
+                    <div className="mt-8 flex justify-center">
+                        <Link 
+                            to="/?page=1" 
+                            className="bg-blue-800 hover:bg-blue-900 text-white font-bold py-3 px-8 rounded-lg text-lg transition-all"
+                            onClick={handleFinalizeChecklist}
+                        >
+                            {finalizeChecklistMutation.isPending ? 'Finalizando...' : 'Finalizar Checklist'}
+                        </Link>
+                    </div>
+                )}
         </div>
     );
 }
