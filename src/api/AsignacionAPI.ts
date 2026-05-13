@@ -72,10 +72,14 @@ export async function getAsignaciones(take: number, skip: number) {
         if(response.success) {
             return response.data
         }
+        console.error('Zod validation error:', JSON.stringify(response.error.format(), null, 2))
+        throw new Error('Error de validación en asignaciones')
+
     } catch (error) {
         if(isAxiosError(error) && error.response) {
             throw new Error(error.response.data.error)
         }
+        throw error
     }
 }
 
