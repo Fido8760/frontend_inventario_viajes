@@ -206,19 +206,6 @@ export default function ChecklistCreateView() {
             return;
         }
 
-        if (asignacionData?.checklist?.id && !asignacionData.checklist.completado) {
-            toast.info("Ya existe un checklist en proceso para esta asignación. Redirigiendo...");
-            localStorage.removeItem(dynamicFormStorageKey);
-            navigate(`/asignacion/${asignacionId}/createChecklist/${asignacionData.checklist.id}/uploadImages`, { replace: true });
-            return;
-        }
-
-        if (asignacionData?.checklist?.completado) {
-            toast.info("Este Checklist ya fue finalizado, no se puede crear otro");
-            navigate("/?page=1", { replace: true });
-            return;
-        }
-
         if(!parsedPlantilla?.preguntas) {
             toast.error("Error interno: Plantilla de checklist no disponible");
             return;
