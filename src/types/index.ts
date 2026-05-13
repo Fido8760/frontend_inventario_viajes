@@ -335,7 +335,6 @@ export const datosChecklistEnAsignacionSchema = z.object({
   createdAt: z.string().datetime(), 
   updatedAt: z.string().datetime(), 
   imagenes: z.array(imagenEnChecklistSchema),
-  completado: z.boolean()
 });
 
 
