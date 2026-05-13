@@ -135,14 +135,14 @@ const apiPaginatedAsignacionItemSchema = z.object({
   id: z.number(),
   unidadId: z.number(),
   cajaId: z.number().nullable(),
-  operadorId: z.number(),
+  operadorId: z.number().nullable(),
   createdAt: z.string().datetime(), 
   updatedAt: z.string().datetime(), 
   userId: z.number(),
   usuario: apiPaginatedUsuarioSchema, 
   unidad: apiPaginatedUnidadSchema,  
   caja: apiPaginatedCajaSchema.nullable(), 
-  operador: apiPaginatedOperadorSchema,  
+  operador: apiPaginatedOperadorSchema.nullable(),  
   checklist: apiChecklistInfoSchema.nullable().optional()
 })
 
