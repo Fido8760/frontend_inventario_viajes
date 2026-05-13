@@ -62,8 +62,8 @@ export default function AsignacionesSummary({ asignacion, formattedDate }: { asi
                             </p>
                         )}
                         <p className="text-sm text-gray-400">
-                            Operador: {asignacion.operador.nombre}{" "}
-                            {asignacion.operador.apellido_p} {asignacion.operador.apellido_m}
+                            Operador: {asignacion.operador?.nombre}{" "}
+                            {asignacion.operador?.apellido_p} {asignacion.operador?.apellido_m}
                         </p>
                         <p className="text-sm text-gray-400">
                             Checklist Realizado por: {asignacion.usuario.name}{" "}
