@@ -153,9 +153,9 @@ export default function DashboardView() {
                                             </p>
                                         )}
                                         <p className="text-sm text-gray-400">
-                                            Operador: {asignacion.operador.nombre}{" "}
-                                            {asignacion.operador.apellido_p}{" "}
-                                            {asignacion.operador.apellido_m}
+                                            Operador: {asignacion.operador?.nombre}{" "}
+                                            {asignacion.operador?.apellido_p}{" "}
+                                            {asignacion.operador?.apellido_m}
                                         </p>
                                         <p className="text-sm text-gray-400">
                                             Asignación Realizada por: {asignacion.usuario.name} {asignacion.usuario.lastname}
