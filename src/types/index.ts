@@ -1,4 +1,5 @@
 import { z } from 'zod'
+import { Rol } from './roles'
 
 /** Usuario */
 export const authSchema = z.object({
@@ -7,7 +8,7 @@ export const authSchema = z.object({
     email: z.string(),
     password: z.string(),
     password_confirmation: z.string(),
-    rol: z.number(),
+    rol: z.nativeEnum(Rol),
     token: z.string()
 })
 export type Auth = z.infer<typeof authSchema>
@@ -36,7 +37,7 @@ export const adminUserEditFormSchema = z.object({
     name: z.string(),
     lastname: z.string(),
     email: z.string(),
-    rol: z.number() // Ejemplo de validación
+    rol: z.nativeEnum(Rol)// Ejemplo de validación
 });
 export type AdminUserEditFormData = z.infer<typeof adminUserEditFormSchema>;
 
@@ -47,7 +48,7 @@ export const usuarioSchemaBase = z.object({
     name: z.string(),
     lastname: z.string(),
     email: z.string(), // <--- AÑADIR
-    rol: z.number()
+    rol: z.nativeEnum(Rol)
 });
   
 export const unidadSchemaBase = z.object({
@@ -106,7 +107,7 @@ export type AsignacionCompleta = z.infer<typeof asignacionCompletaSchema>;
 const apiPaginatedUsuarioSchema = z.object({
   name: z.string(),
   lastname: z.string(),
-  rol: z.number()
+  rol: z.nativeEnum(Rol)
 });
 
 const apiPaginatedUnidadSchema = z.object({
@@ -272,7 +273,7 @@ const usuarioEnAsignacionSchema = z.object({
   name: z.string(),
   lastname: z.string(),
   email: z.string().email(),
-  rol: z.number() // <-- Incluye todos los campos de la respuesta
+  rol: z.nativeEnum(Rol) // <-- Incluye todos los campos de la respuesta
 });
 
 const unidadEnAsignacionSchema = z.object({
