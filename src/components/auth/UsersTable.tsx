@@ -82,7 +82,7 @@ export default function UsersTable({ data }: { data: User[] }) {
                                 {user.email}
                                 </td>
                                 <td className="px-3 py-4 text-sm text-gray-500">
-                                {user.rol === 2 ? "Usuario" : "Administrador"}
+                                {user.rol === 'SISTEMAS' ? "Usuario" : "Administrador"}
                                 </td>
                                 <td className="relative py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-0 ">
                                     <div className="flex gap-5 justify-end items-center">
@@ -124,7 +124,7 @@ export default function UsersTable({ data }: { data: User[] }) {
                         </p>
                         <p className="text-sm text-gray-600">
                             <span className="font-medium">Rol:</span>{" "}
-                            {user.rol === 2 ? "Usuario" : "Administrador"}
+                            {user.rol === 'ADMIN' ? "Usuario" : "Administrador"}
                         </p>
                         <div className="mt-3 flex justify-end gap-4">
                             { authUser?.email !== user.email ? (

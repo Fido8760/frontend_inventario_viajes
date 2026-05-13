@@ -49,7 +49,7 @@ export default function EditarAsignacionForm({ data, asignacionId }: EditarAsign
             const formDataValues: AsignacionFormData = {
                 unidadId: data.unidadId,
                 cajaId: data.cajaId ?? undefined, // Mapear null a undefined
-                operadorId: data.operadorId
+                operadorId: data.operadorId ?? 0
             };
             reset(formDataValues); // Inicializa el formulario
         }

@@ -199,7 +199,7 @@ export default function DashboardView() {
                                                         Ver Checklist
                                                     </Link>
                                                 </Menu.Item>
-                                                {authenticatedUser?.rol === 1 && (
+                                                {authenticatedUser?.rol === 'SISTEMAS' && (
                                                     <>
                                                         <Menu.Item>
                                                             <Link

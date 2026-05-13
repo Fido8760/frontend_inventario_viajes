@@ -87,15 +87,16 @@ export type OperadoresBase = z.infer<typeof operadoresSchemaBase>;
 export const asignacionCompletaSchema = z.object({
   id: z.number(),
   unidadId: z.number(),
-  cajaId: z.number().nullable(), // <-- Permite null
-  operadorId: z.number(),
-  userId: z.number(),
-  createdAt: z.string().datetime(), // O z.coerce.date()
-  updatedAt: z.string().datetime(), // O z.coerce.date()
-  usuario: usuarioSchemaBase, // Asume que siempre existe usuario
-  unidad: unidadSchemaBase,  // Asume que siempre existe unidad
-  caja: cajaSchemaBase.nullable(), // <-- Permite null
-  operador: operadorSchemaBase // Asume que siempre existe operador
+  cajaId: z.number().nullable(),
+  operadorId: z.number().nullable(), // ✅ FIX
+  userId: z.number().nullable(),     // ✅ FIX
+  createdAt: z.string().datetime(),
+  updatedAt: z.string().datetime(),
+
+  usuario: usuarioSchemaBase.nullable(), // ✅ FIX
+  unidad: unidadSchemaBase,
+  caja: cajaSchemaBase.nullable(),
+  operador: operadorSchemaBase.nullable() // ✅ FIX
 });
 export type AsignacionCompleta = z.infer<typeof asignacionCompletaSchema>;
   

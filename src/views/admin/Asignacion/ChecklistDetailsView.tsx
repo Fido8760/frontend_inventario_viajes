@@ -100,7 +100,7 @@ export default function ChecklistDetailsView() {
                     </Link>
 
                     {/* Mostrar acciones solo si el usuario tiene rol 1 (admin) */}
-                    {authenticatedUser?.rol === 1 && (
+                    {authenticatedUser?.rol === 'SISTEMAS' && (
                         <>
                             {checklistIdParaAcciones ? (
                                 <>

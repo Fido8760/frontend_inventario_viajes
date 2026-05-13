@@ -98,7 +98,7 @@ export default function AsignacionesSummary({ asignacion, formattedDate }: { asi
                                 Ver Checklist
                                 </Link>
                             </Menu.Item>
-                            {authenticatedUser?.rol === 1 && (
+                            {authenticatedUser?.rol === 'SISTEMAS' && (
                                 <>
                                 <Menu.Item>
                                     <Link

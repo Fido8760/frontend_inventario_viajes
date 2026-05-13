@@ -64,8 +64,6 @@ const DetalleAsignacion = ({ data }: DetalleAsignacionProps) => {
                 <div className="mt-4 grid grid-cols-2 gap-4">
                     <InfoItem label="Fecha Creación" value={data.createdAt ? formatDate(data.createdAt) : 'N/A'} />
                     <InfoItem label="Fecha Actualización" value={data.updatedAt ? formatDate(data.updatedAt) : 'N/A'} />
-                    <InfoItem label="Vigencia Licencia" value={formatDate(data.operador?.vigencia_lic) ?? 'N/A'} />
-                    <InfoItem label="Vigencia Apto Médico" value={formatDate(data.operador?.vigencia_apto) ?? 'N/A'} />
                 </div>
             </div>
 
