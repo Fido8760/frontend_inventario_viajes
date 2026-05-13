@@ -295,8 +295,8 @@ const operadorEnAsignacionSchema = z.object({
   nombre: z.string(),
   apellido_p: z.string(),
   apellido_m: z.string(),
-  vigencia_lic: z.string(), // <-- Incluye todos los campos de la respuesta (o coerce.date)
-  vigencia_apto: z.string() // <-- Incluye todos los campos de la respuesta (o coerce.date)
+  vigencia_lic: z.string(), 
+  vigencia_apto: z.string() 
 });
 
 // --- Schemas para la ESTRUCTURA DEL CHECKLIST DENTRO de la respuesta de getAsignacionById ---
@@ -341,14 +341,14 @@ export const asignacionByIdApiResponseSchema = z.object({
   id: z.number(),
   unidadId: z.number(),
   cajaId: z.number().nullable(),
-  operadorId: z.number(),
-  userId: z.number(),
+  operadorId: z.number().nullable(),  // 👈
+  userId: z.number().nullable(),      // 👈
   createdAt: z.string(),
   updatedAt: z.string(),
-  usuario: usuarioEnAsignacionSchema,
+  usuario: usuarioEnAsignacionSchema.nullable(),  // 👈
   unidad: unidadEnAsignacionSchema,
   caja: cajaEnAsignacionSchema.nullable(),
-  operador: operadorEnAsignacionSchema,
+  operador: operadorEnAsignacionSchema.nullable(),
   checklist: datosChecklistEnAsignacionSchema.nullable(),
 });
 

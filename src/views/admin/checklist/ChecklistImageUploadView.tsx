@@ -2,7 +2,6 @@ import { useMutation } from "@tanstack/react-query";
 import { useParams, useNavigate } from "react-router-dom";
 import { toast } from "react-toastify";
 import { useState, useEffect } from "react";
-import imageCompression from 'browser-image-compression';
 import { uploadImage, finalizarChecklist } from "../../../api/ChecklistAPI";
 import SignaturePad from "../../../components/admin/SignaturePad";
 
@@ -39,14 +38,14 @@ const optionalImageFields = [
 ];
 
 // Función auxiliar para estilos del botón
-function getButtonStyle(_fieldId: string, isUploading: boolean, isUploaded: boolean) {
-    if (isUploading) {
-        return "bg-yellow-100 border-yellow-500 text-yellow-700 cursor-not-allowed";
+function getButtonStyle(fieldId: string, uploadingFields: Record<string, boolean>, isUploaded: boolean) {
+    if (uploadingFields[fieldId]) {
+        return "bg-yellow-100 border-yellow-500 text-yellow-700 cursor-not-allowed"
     }
     if (isUploaded) {
-        return "bg-green-100 border-green-500 text-green-700";
+        return "bg-green-100 border-green-500 text-green-700"
     }
-    return "bg-slate-100 border-gray-300 hover:bg-slate-200 cursor-pointer";
+    return "bg-slate-100 border-gray-300 hover:bg-slate-200 cursor-pointer"
 }
 
 export default function ChecklistImageUploadView() {
@@ -55,7 +54,6 @@ export default function ChecklistImageUploadView() {
     const checklistId = +params.checklistId!;
     const navigate = useNavigate();
 
-    // Recuperar estado guardado
     const savedState = localStorage.getItem(`uploadProgress_${checklistId}`);
     const [imageUrls, setImageUrls] = useState<Record<string, string | null>>(
         savedState ? JSON.parse(savedState).imageUrls : {}
@@ -63,6 +61,8 @@ export default function ChecklistImageUploadView() {
     const [uploadedFields, setUploadedFields] = useState<Record<string, boolean>>(
         savedState ? JSON.parse(savedState).uploadedFields : {}
     );
+
+    const [uploadingFields, setUploadingFields] = useState<Record<string, boolean>>({});
 
     useEffect(() => {
         const stateToSave = JSON.stringify({ imageUrls, uploadedFields });
@@ -87,37 +87,29 @@ export default function ChecklistImageUploadView() {
     });
 
     const handleChange = async (e: React.ChangeEvent<HTMLInputElement>, fieldId: string) => {
-        const files = e.target.files;
-        if (files && files.length > 0 && asignacionId && checklistId) {
-            const originalFile = files[0];
+        const files = e.target.files
+        if (!files || files.length === 0) return
 
-            try {
-                const options = {
-                    maxSizeMB: 0.5,
-                    maxWidthOrHeight: 1024,
-                    useWebWorker: true,
-                    fileType: 'image/webp'
-                };
-
-                const compressedFile = await imageCompression(originalFile, options);
-                const renamedFile = new File([compressedFile], `${fieldId}.webp`, {
-                    type: 'image/webp',
-                });
-                const data = { file: renamedFile, asignacionId, checklistId, fieldId };
-                uploadImageMutation.mutate(data);
-
-                // Vista previa inmediata
-                const reader = new FileReader();
-                reader.onloadend = () => {
-                    setImageUrls(prev => ({ ...prev, [fieldId]: reader.result as string }));
-                };
-                reader.readAsDataURL(compressedFile);
-            } catch (error) {
-                toast.error("Error al comprimir la imagen.");
-                console.error("Error al comprimir:", error);
-            }
+        const file = files[0]
+        
+        // Preview inmediata sin comprimir
+        const reader = new FileReader()
+        reader.onloadend = () => {
+            setImageUrls(prev => ({ ...prev, [fieldId]: reader.result as string }))
         }
-    };
+        reader.readAsDataURL(file)
+
+        setUploadingFields(prev => ({ ...prev, [fieldId]: true }))
+
+        uploadImageMutation.mutate(
+            { file, asignacionId, checklistId, fieldId },
+            {
+                onSettled: () => {
+                    setUploadingFields(prev => ({ ...prev, [fieldId]: false }))
+                }
+            }
+        )
+    }
 
     const finalizeChecklistMutation = useMutation({
         mutationFn: finalizarChecklist,
@@ -187,13 +179,9 @@ export default function ChecklistImageUploadView() {
                                     onChange={(e) => handleChange(e, id)}
                                     disabled={uploadedFields[id] || uploadImageMutation.isPending}
                                 />
-                                <div className={`border rounded-md px-4 py-2 flex items-center justify-center h-12 transition-colors ${
-                                    getButtonStyle(id, uploadImageMutation.isPending, uploadedFields[id])
-                                }`}>
-                                    {uploadImageMutation.isPending ? (
-                                        <span className="flex items-center">
-                                            Subiendo...
-                                        </span>
+                               <div className={`... ${getButtonStyle(id, uploadingFields, uploadedFields[id])}`}>
+                                    {uploadingFields[id] ? (        // 👈 solo este campo
+                                        <span>Subiendo...</span>
                                     ) : uploadedFields[id] ? (
                                         <span>Subido ✓</span>
                                     ) : (
@@ -234,13 +222,9 @@ export default function ChecklistImageUploadView() {
                                     onChange={(e) => handleChange(e, id)}
                                     disabled={uploadedFields[id] || uploadImageMutation.isPending}
                                 />
-                                <div className={`border rounded-md px-4 py-2 flex items-center justify-center h-12 transition-colors ${
-                                    getButtonStyle(id, uploadImageMutation.isPending, uploadedFields[id])
-                                }`}>
-                                    {uploadImageMutation.isPending ? (
-                                        <span className="flex items-center">
-                                            Subiendo...
-                                        </span>
+                                <div className={`... ${getButtonStyle(id, uploadingFields, uploadedFields[id])}`}>
+                                    {uploadingFields[id] ? (        // 👈 solo este campo
+                                        <span>Subiendo...</span>
                                     ) : uploadedFields[id] ? (
                                         <span>Subido ✓</span>
                                     ) : (

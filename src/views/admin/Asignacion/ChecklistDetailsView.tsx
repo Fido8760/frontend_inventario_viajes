@@ -15,9 +15,7 @@ export default function ChecklistDetailsView() {
     const asignacionIdParam = params.asignacionId;
     const asignacionId = asignacionIdParam ? parseInt(asignacionIdParam, 10) : NaN;
 
-    if (isNaN(asignacionId)) {
-        return <Navigate to="/404" replace />;
-    }
+    
 
     const { data, isLoading, isError } = useQuery({
         queryKey: ['Asignacion', asignacionId],
@@ -37,7 +35,7 @@ export default function ChecklistDetailsView() {
     const firstChecklist = data?.checklist;
     const checklistIdParaAcciones = firstChecklist?.id;
 
-    // --- Mutación para Eliminar Checklist ---
+
     const { mutate, isPending: isDeleting } = useMutation({ 
 
         mutationFn: (args: DeleteChecklistArgs) => deleteChecklist(args),
@@ -79,6 +77,9 @@ export default function ChecklistDetailsView() {
     };
 
 
+    if (isNaN(asignacionId)) {
+        return <Navigate to="/404" replace />;
+    }
     if (isLoading) { return <p className='text-center text-2xl mt-10'>Cargando...</p>; }
     if (isError) { /* ... (manejo de error como antes) ... */ }
 

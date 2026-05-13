@@ -146,6 +146,9 @@ export async function getAsignacionById(id: AsignacionCompleta['id']) {
         if(result.success) {
             return result.data
         }
+
+        console.error('Zod error:', result.error.format())
+        throw new Error('Error de validación en asignaciones')
     } catch (error) {
         if(isAxiosError(error) && error.response) {
             throw new Error(error.response.data.error)
