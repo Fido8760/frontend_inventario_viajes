@@ -145,7 +145,8 @@ const apiPaginatedAsignacionItemSchema = z.object({
   unidad: apiPaginatedUnidadSchema,  
   caja: apiPaginatedCajaSchema.nullable(), 
   operador: apiPaginatedOperadorSchema.nullable(),  
-  checklist: apiChecklistInfoSchema.nullable().optional()
+  checklist: apiChecklistInfoSchema.nullable().optional(),
+  status: z.enum(['CREADA', 'FOTOS_PENDIENTES', 'COMPLETA']).optional(),
 })
 
 export type ApiAsignacionItem = z.infer<typeof apiPaginatedAsignacionItemSchema>
