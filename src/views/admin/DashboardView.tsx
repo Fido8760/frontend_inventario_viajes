@@ -170,6 +170,7 @@ function StatusBadge({ status }: { status: string }) {
     const config = {
         COMPLETA: { label: 'Completa', className: 'bg-green-100 text-green-800' },
         FOTOS_PENDIENTES: { label: 'Fotos pendientes', className: 'bg-yellow-100 text-yellow-800' },
+        CHECKLIST_PENDIENTE: { label: 'Checklist Pendiente', className: 'bg-red-100 text-red-800' },
         CREADA: { label: 'Sin checklist', className: 'bg-blue-100 text-blue-800' },
     }
     const { label, className } = config[status as keyof typeof config] ?? { label: status, className: 'bg-gray-100 text-gray-700' }
