@@ -1,186 +1,142 @@
 import { isAxiosError } from "axios";
 import api from "../lib/axios";
-import { datosChecklistEnAsignacionSchema, QuestionType, UploadImageResponse, uploadImageResponseSchema } from "../types";
+import { ChecklistDetalle, checklistDetalleSchema } from "../types";
 
-/** Checklist */
+// ── Tipos del nuevo modelo ────────────────────────────────────────────────────
 
-export type BackendChecklistPayload = {
-  checklist: {
-      secciones: Array<{
-          nombre: string;
-          preguntas: Array<{
-              idPregunta: number;
-              pregunta: string; 
-              respuesta: string | number | null | undefined
-              tipo: QuestionType; 
-              aplicaA: string; 
-          }>;
-      }>;
-  };
+export type RespuestaItem = {
+    preguntaId: number;
+    valor: string;
+};
+
+export type GuardarRespuestasArgs = {
+    asignacionId: number;
+    checklistId: number;
+    respuestas: RespuestaItem[];
 };
 
 export type PostChecklistArgs = {
-  asignacionId: number;
-  body: BackendChecklistPayload; // La función recibe el cuerpo ya construido
+    asignacionId: number;
 };
 
 type PostChecklistSuccessData = {
-  message: string;
-  id?: number;
+    message: string;
+    id: number;
 };
-  
-export async function postChecklist({body , asignacionId}: PostChecklistArgs) {
 
-    const url = `/assignments/${asignacionId}/checklist`
+// ── Funciones API ─────────────────────────────────────────────────────────────
+
+/** Crea el checklist vacío — no recibe body */
+export async function postChecklist({ asignacionId }: PostChecklistArgs): Promise<PostChecklistSuccessData> {
+    const url = `/assignments/${asignacionId}/checklist`;
     try {
-        const { data } = await api.post<PostChecklistSuccessData>(url, body );
+        const { data } = await api.post<PostChecklistSuccessData>(url);
         return data;
-        
     } catch (error) {
         if (isAxiosError(error) && error.response) {
             throw new Error(error.response.data.error);
         }
+        throw new Error("Error desconocido al crear el checklist");
     }
 }
 
-export async function getChecklist(asignacionId: number, checklistId: number) {
-  try {
-    const url = `/assignments/${asignacionId}/checklist/${checklistId}`
-    const { data } =  await api(url) 
-    const response = datosChecklistEnAsignacionSchema.safeParse(data)
-    if(response.success) {
-      return response.data
+/** Trae preguntas + respuestas ya guardadas del checklist */
+export async function getChecklist(asignacionId: number, checklistId: number): Promise<ChecklistDetalle> {
+    const url = `/assignments/${asignacionId}/checklist/${checklistId}`;
+    try {
+        const { data } = await api.get(url);
+        const result = checklistDetalleSchema.safeParse(data);
+        if (!result.success) {
+            console.error("Zod error getChecklist:", result.error);
+            throw new Error("Respuesta del servidor inválida");
+        }
+        return result.data;
+    } catch (error) {
+        if (isAxiosError(error) && error.response) {
+            throw new Error(error.response.data.error);
+        }
+        throw new Error("Error al obtener el checklist");
     }
-  } catch (error) {
-    if (isAxiosError(error) && error.response) {
-      throw new Error(error.response.data.error);
-    }
-  }
 }
 
-export type UpdateChecklistArgs = {
-  asignacionId: number;
-  checklistId: number;
-  body: BackendChecklistPayload;
-};
-
-type UpdateChecklistSuccessData = {
-  message: string
+/** Guarda respuestas parciales (upsert) — se llama por sección */
+export async function guardarRespuestas({ asignacionId, checklistId, respuestas }: GuardarRespuestasArgs) {
+    const url = `/assignments/${asignacionId}/checklist/${checklistId}`;
+    try {
+        const { data } = await api.put(url, { respuestas });
+        return data;
+    } catch (error) {
+        if (isAxiosError(error) && error.response) {
+            throw new Error(error.response.data.error);
+        }
+        throw new Error("Error al guardar las respuestas");
+    }
 }
 
-export async function updateChecklist({asignacionId, checklistId, body}: UpdateChecklistArgs): Promise<UpdateChecklistSuccessData> {
-  const url = `/assignments/${asignacionId}/checklist/${checklistId}`
-  try {
-    const { data } =  await api.put<UpdateChecklistSuccessData>(url, body) 
-    return data
-  } catch (error) {
-    console.error("API: Error al actualizar checklist:", error);
-
-    if (isAxiosError(error) && error.response) {
-        const backendError = error.response.data?.error
-                             || error.response.data?.message
-                             || `Error ${error.response.status}: ${error.response.statusText}`;
-        throw new Error(backendError);
+/** Finaliza el checklist — valida obligatorias */
+export async function finalizarChecklist({ asignacionId, checklistId }: { asignacionId: number; checklistId: number }) {
+    const url = `/assignments/${asignacionId}/checklist/${checklistId}/finalizar`;
+    try {
+        const { data } = await api.post(url);
+        return data;
+    } catch (error) {
+        if (isAxiosError(error) && error.response) {
+            throw new Error(error.response.data.error);
+        }
+        throw new Error("Error al finalizar el checklist");
     }
-    else if (error instanceof Error) {
-         throw new Error(`Error inesperado: ${error.message}`);
-    }
-    else {
-         throw new Error("Ocurrió un error desconocido al actualizar el checklist.");
-    }
-  }
 }
 
-export type DeleteChecklistArgs = {
-  asignacionId: number;
-  checklistId: number;
-};
-
-type DeleteChecklistSuccessData = {
-  message: string;
-};
-
-// Función para eliminar un checklist
-export async function deleteChecklist({ asignacionId, checklistId }: DeleteChecklistArgs): Promise<DeleteChecklistSuccessData> { 
-  const url = `/assignments/${asignacionId}/checklist/${checklistId}`;
-  console.log(`API: Ejecutando DELETE en ${url}`);
-
-  try {
-
-      const { data } = await api.delete<DeleteChecklistSuccessData>(url);
-
-      if (!data || typeof data.message !== 'string') {
-           console.warn("Respuesta de eliminación de checklist inesperada:", data);
-           throw new Error("Respuesta inválida del servidor tras eliminar.");
-      }
-      console.log("API: Checklist eliminado con éxito. Respuesta:", data);
-      return data;
-
-  } catch (error) {
-      console.error("API: Error al eliminar checklist:", error);
-      if (isAxiosError(error) && error.response) {
-          const backendError = error.response.data?.error
-                               || error.response.data?.message
-                               || `Error ${error.response.status}: ${error.response.statusText}`;
-          throw new Error(backendError);
-      } else if (error instanceof Error) {
-           throw new Error(`Error inesperado: ${error.message}`);
-      } else {
-           throw new Error("Ocurrió un error desconocido al eliminar el checklist.");
-      }
-  }
+/** Finaliza las fotos — valida fotos obligatorias y cierra asignación */
+export async function finalizarFotos({ asignacionId, checklistId }: { asignacionId: number; checklistId: number }) {
+    const url = `/assignments/${asignacionId}/checklist/${checklistId}/finalizar-fotos`;
+    try {
+        const { data } = await api.post(url);
+        return data;
+    } catch (error) {
+        if (isAxiosError(error) && error.response) {
+            throw new Error(error.response.data.error);
+        }
+        throw new Error("Error al finalizar las fotos");
+    }
 }
 
-
+// ── Imágenes (sin cambios) ────────────────────────────────────────────────────
 
 export type ChecklistImageAPI = {
     file: File;
-    asignacionId: number
-    checklistId: number
-    fieldId: string
-}
+    asignacionId: number;
+    checklistId: number;
+    fieldId: string;
+};
 
-export async function uploadImage({file, asignacionId, checklistId, fieldId}: ChecklistImageAPI) {
-  let formData = new FormData()
-  formData.append('file', file)
-  formData.append('fieldId', fieldId)
-  const url = `/assignments/${asignacionId}/checklist/${checklistId}/image`;
-
-  try {
-    const { data } = await api.post<UploadImageResponse>(url, formData)
-    const result = uploadImageResponseSchema.parse(data)
-    return result
-    
-  } catch (error) {
-    if (isAxiosError(error) && error.response) {
-      throw new Error(error.response.data.error);
-    }
-    throw new Error("Error desconocido al subir la imagen");
-  }
-}
-
-
-export type FinalizarChecklistArgs = {
-    asignacionId: number
-    checklistId: number
-}
-
-export type FinalizarChecklistSucccessData = {
-    message: string
-}
-
-export async function finalizarChecklist({asignacionId, checklistId}: FinalizarChecklistArgs) {
-      const url = `/assignments/${asignacionId}/checklist/${checklistId}/finalizar`;
-
-      try {
-        const { data } = await api.post<FinalizarChecklistSucccessData>(url)
-        console.log(data)
-        return data
-      } catch (error) {
+export async function uploadImage({ file, asignacionId, checklistId, fieldId }: ChecklistImageAPI) {
+    const formData = new FormData();
+    formData.append('file', file);
+    formData.append('fieldId', fieldId);
+    const url = `/assignments/${asignacionId}/checklist/${checklistId}/image`;
+    try {
+        const { data } = await api.post(url, formData);
+        return data;
+    } catch (error) {
         if (isAxiosError(error) && error.response) {
-          throw new Error(error.response.data.error);
+            throw new Error(error.response.data.error);
         }
-        throw new Error("Error desconocido al finalizar el checklist");
-      }
+        throw new Error("Error desconocido al subir la imagen");
+    }
+}
 
+// ── Eliminar (sin cambios) ────────────────────────────────────────────────────
+
+export async function deleteChecklist({ asignacionId, checklistId }: { asignacionId: number; checklistId: number }) {
+    const url = `/assignments/${asignacionId}/checklist/${checklistId}`;
+    try {
+        const { data } = await api.delete(url);
+        return data;
+    } catch (error) {
+        if (isAxiosError(error) && error.response) {
+            throw new Error(error.response.data.error);
+        }
+        throw new Error("Error al eliminar el checklist");
+    }
 }

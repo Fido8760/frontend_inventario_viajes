@@ -19,7 +19,7 @@ export default function DashboardView() {
     const { data: authenticatedUser } = useAuth();
     const [searchTerm, setSearchTerm] = useState("");
 
-    const productsPerPage = 9; // 👈 grid de 3 cols
+    const productsPerPage = 9;
     const pageParam = +searchParams.get("page")!;
     const page = Math.max(1, Number(pageParam) || 1);
     const skip = (page - 1) * productsPerPage;
@@ -82,13 +82,14 @@ export default function DashboardView() {
     const totalPages = debouncedSearchTerm ? 1 : Math.ceil(data.count / productsPerPage);
     const canCreate = authenticatedUser?.rol === Rol.CAPTURISTA || authenticatedUser?.rol === Rol.SISTEMAS;
     const canDelete = authenticatedUser?.rol === Rol.SISTEMAS;
+    const canEdit   = authenticatedUser?.rol === Rol.SISTEMAS;
 
     return (
         <div>
             {/* Header */}
             <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
                 <div>
-                    <h1 className="text-2xl font-medium text-gray-900">Inventario de viajes</h1>
+                    <h1 className="text-2xl font-medium text-gray-900">Asignaciones de viajes</h1>
                     <p className="text-sm text-gray-500 mt-0.5">Checklist de unidades registrados</p>
                 </div>
                 <div className="flex items-center gap-3 flex-wrap">
@@ -128,6 +129,7 @@ export default function DashboardView() {
                                 asignacion={asignacion}
                                 canDelete={canDelete}
                                 onDelete={handleDelete}
+                                canEdit={canEdit}
                             />
                         ))}
                     </div>
@@ -178,10 +180,11 @@ function StatusBadge({ status }: { status: string }) {
     )
 }
 
-function AsignacionCard({ asignacion, canDelete, onDelete }: {
+function AsignacionCard({ asignacion, canDelete, onDelete, canEdit }: {
     asignacion: ApiAsignacionItem
     canDelete: boolean
     onDelete: (id: number) => void
+    canEdit?: boolean
 }) {
     return (
         <div className="bg-white rounded-xl border border-gray-100 overflow-hidden hover:border-gray-200 transition-colors">
@@ -261,15 +264,17 @@ function AsignacionCard({ asignacion, canDelete, onDelete }: {
                         </svg>
                         Ver
                     </Link>
-                    <Link
-                        to={`/asignacion/${asignacion.id}/edit`}
-                        className="flex items-center gap-1 text-xs text-gray-500 border border-gray-200 rounded-md px-2.5 py-1.5 hover:bg-gray-50 transition-colors no-underline"
-                    >
-                        <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
-                        </svg>
-                        Editar
-                    </Link>
+                    {canEdit && (
+                        <Link
+                            to={`/asignacion/${asignacion.id}/edit`}
+                            className="flex items-center gap-1 text-xs text-gray-500 border border-gray-200 rounded-md px-2.5 py-1.5 hover:bg-gray-50 transition-colors no-underline"
+                        >
+                            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z" />
+                            </svg>
+                            Editar
+                        </Link>
+                    )}
                     {canDelete && (
                         <button
                             onClick={() => onDelete(asignacion.id)}

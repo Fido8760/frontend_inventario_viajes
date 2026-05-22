@@ -1,196 +1,225 @@
-import { FieldErrors, Control } from "react-hook-form";
-import { useState } from "react";
-import { ChecklistFormData, PreguntaUI, SeccionUI } from "../../types";
-import ErrorMessage from "../ui/ErrorMessage";
+import { useEffect, useState } from "react";
+import { RespuestaItem } from "../../api/ChecklistAPI";
+import { PreguntaConRespuesta } from "../../types";
 
+type Seccion = {
+    nombre: string;
+    preguntas: PreguntaConRespuesta[];
+};
+ 
 type ChecklistFormProps = {
-  seccionesParaRenderizar: SeccionUI[];
-  errors: FieldErrors<ChecklistFormData>;
-  control: Control<ChecklistFormData>;
+    seccion: Seccion;
+    seccionActual: number;
+    totalSecciones: number;
+    isGuardando: boolean;
+    estaCompleto: boolean;
+    onAnterior: () => void;
+    onSiguiente: (respuestas: RespuestaItem[]) => void;
+    onFinalizar: (respuestas: RespuestaItem[]) => void;
 };
 
-type RespuestaPath = `respuestas.preguntas.${number}.respuesta`;
-type IdPreguntaPath = `respuestas.preguntas.${number}.idPregunta`;
-type TipoPath = `respuestas.preguntas.${number}.tipo`;
+export default function ChecklistForm({ seccion, seccionActual, totalSecciones, isGuardando, estaCompleto, onAnterior, onSiguiente, onFinalizar}: ChecklistFormProps) {
 
-export default function ChecklistForm({ control, errors, seccionesParaRenderizar }: ChecklistFormProps) {
-  const [pagina, setPagina] = useState(0);
+  const [valores, setValores] = useState<Record<number, string>>({});
+  const [errores, setErrores] = useState<Record<number, string>>({});
 
-  const avanzarPagina = async () => {
-    if (pagina < seccionesParaRenderizar.length + 1) {
-      setPagina(pagina + 1)
+  useEffect(() => {
+    const iniciales: Record<number, string> = [];
+    seccion.preguntas.forEach(p => {
+      iniciales[p.preguntaId] = p.valor ?? '';
+    });
+    setValores(iniciales);
+    setErrores({});
+    setErrores({});
+  }, [seccion]);
+
+  const handleChange = (preguntaId: number, valor: string) => {
+    setValores(prev => ({ ...prev, [preguntaId]: valor }));
+    if(errores[preguntaId]) {
+      setErrores(prev => { const e = { ...prev }; delete e[preguntaId]; return e; });
     }
   };
 
-  const retrocederPagina = () => {
-    if (pagina > 0) setPagina(pagina - 1);
+  const validar = (): boolean => {
+    const nuevosErrores: Record<number, string> = {};
+
+    seccion.preguntas.forEach(p => {
+      if (!p.obligatorio) return;
+      const val = valores[p.preguntaId] ?? '';
+
+      if (val === '' || val === null) {
+          nuevosErrores[p.preguntaId] = 'Este campo es obligatorio';
+          return;
+      }
+      if (p.tipo === 'numero' && isNaN(Number(val))) {
+          nuevosErrores[p.preguntaId] = 'Debe ser un número';
+      }
+      if (p.tipo === 'si_no' && !['si', 'no'].includes(val)) {
+          nuevosErrores[p.preguntaId] = "Selecciona 'Sí' o 'No'";
+      }
+      if (p.tipo === 'opciones' && !['BUENO', 'REGULAR', 'MALO'].includes(val)) {
+          nuevosErrores[p.preguntaId] = 'Selecciona una opción';
+      }
+    });
+
+    setErrores(nuevosErrores);
+    return Object.keys(nuevosErrores).length === 0;
   };
+ 
+    const getRespuestas = (): RespuestaItem[] =>
+        seccion.preguntas.map(p => ({
+            preguntaId: p.preguntaId,
+            valor: valores[p.preguntaId] ?? '',
+        }));
+ 
+    const handleSiguiente = () => {
+        if (!validar()) return;
+        onSiguiente(getRespuestas());
+    };
+ 
+    const handleFinalizar = () => {
+        if (!validar()) return;
+        onFinalizar(getRespuestas());
+    };
+ 
+    const esUltima = seccionActual === totalSecciones - 1;
 
-  const calculateStartIndexForPage = ( pageIndex: number): number => {
-    let startIndex = 0
-    for(let i = 0; i < pageIndex; i++) {
-      startIndex += seccionesParaRenderizar[i].preguntas.length || 0
-    }
-    return startIndex
-  }
-
-  const renderInput = (preguntaUI: PreguntaUI, itemIndexInSection: number) => {
-
-  const globalIndex = calculateStartIndexForPage(pagina) + itemIndexInSection
-
-  const respuestaFieldName: RespuestaPath = `respuestas.preguntas.${globalIndex}.respuesta`;
-  const idFieldName: IdPreguntaPath = `respuestas.preguntas.${globalIndex}.idPregunta`;
-  const tipoFieldName: TipoPath = `respuestas.preguntas.${globalIndex}.tipo`;
-  const fieldError = errors.respuestas?.preguntas?.[globalIndex]?.respuesta
-
-    switch (preguntaUI.tipo) {
-      case "numero":
-        return (
-          <div key={preguntaUI.idPregunta} className="mb-4">
-            <label htmlFor={respuestaFieldName} className="block text-sm font-medium text-gray-800 mb-1">
-              {preguntaUI.pregunta}
-            </label>
-            <input
-              id={respuestaFieldName}
-              type="number"
-              // --- USA control.register CON EL NOMBRE ANIDADO ---
-              {...control.register(respuestaFieldName, { valueAsNumber: true })} // valueAsNumber es importante
-              className="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-            />
-            {/* Inputs ocultos para idPregunta y tipo */}
-            <input type="hidden" {...control.register(idFieldName)} value={preguntaUI.idPregunta} />
-            <input type="hidden" {...control.register(tipoFieldName)} value={preguntaUI.tipo} />
-            {/* --- ACCESO A ERRORES ANIDADOS --- */}
-            {fieldError && <ErrorMessage>{fieldError.message}</ErrorMessage>}
-          </div>
-        )
-
-      case "si_no":
-        return (
-          <div key={preguntaUI.idPregunta} className="mb-4">
-            <label htmlFor={respuestaFieldName} className="block text-sm font-medium text-gray-700 mb-1">
-              {preguntaUI.pregunta}
-            </label>
-            <select
-              id={respuestaFieldName}
-              // --- USA control.register CON EL NOMBRE ANIDADO ---
-              {...control.register(respuestaFieldName)}
-              className="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-              // 'required' HTML no es necesario si Zod maneja la validación
-            >
-              <option value="">--Seleccione--</option> {/* Permitir valor vacío si es opcional o para estado inicial */}
-              <option value="si">Sí</option>
-              <option value="no">No</option>
-            </select>
-             {/* Inputs ocultos para idPregunta y tipo */}
-             <input type="hidden" {...control.register(idFieldName)} value={preguntaUI.idPregunta} />
-             <input type="hidden" {...control.register(tipoFieldName)} value={preguntaUI.tipo} />
-            {/* --- ACCESO A ERRORES ANIDADOS --- */}
-            {fieldError && <ErrorMessage>{fieldError.message}</ErrorMessage>}
-          </div>
-        )
-
-      case "opciones":
-        return (
-          <div key={preguntaUI.idPregunta} className="mb-4">
-            <label htmlFor={respuestaFieldName} className="block text-sm font-medium text-gray-700 mb-1">
-              {preguntaUI.pregunta}
-            </label>
-            <select
-              id={respuestaFieldName}
-              // --- USA control.register CON EL NOMBRE ANIDADO ---
-              {...control.register(respuestaFieldName)}
-              className="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-            >
-              <option value="">Seleccione...</option> {/* Permitir valor vacío */}
-              <option value="BUENO">Bueno</option>
-              <option value="REGULAR">Regular</option>
-              <option value="MALO">Malo</option>
-              {/* Si las opciones fueran dinámicas, vendrían de preguntaUI */}
-            </select>
-             {/* Inputs ocultos para idPregunta y tipo */}
-             <input type="hidden" {...control.register(idFieldName)} value={preguntaUI.idPregunta} />
-             <input type="hidden" {...control.register(tipoFieldName)} value={preguntaUI.tipo} />
-            {/* --- ACCESO A ERRORES ANIDADOS --- */}
-            {fieldError && <ErrorMessage>{fieldError.message}</ErrorMessage>}
-          </div>
-        )
-        
-      case "texto":
-        return (
-          <div key={preguntaUI.idPregunta} className="mb-4">
-            <label htmlFor={respuestaFieldName} className="block text-sm font-medium text-gray-700 mb-1">
-              {preguntaUI.pregunta}
-            </label>
-            <textarea
-              id={respuestaFieldName}
-              // --- USA control.register CON EL NOMBRE ANIDADO ---
-              {...control.register(respuestaFieldName)}
-              rows={3}
-              className="mt-1 block w-full px-4 py-2 border border-gray-300 rounded-lg shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500"
-              placeholder="Si tienes comentarios, escríbelos aquí"
-            />
-             {/* Inputs ocultos para idPregunta y tipo */}
-             <input type="hidden" {...control.register(idFieldName)} value={preguntaUI.idPregunta} />
-             <input type="hidden" {...control.register(tipoFieldName)} value={preguntaUI.tipo} />
-            {/* --- ACCESO A ERRORES ANIDADOS --- */}
-            {fieldError && <ErrorMessage>{fieldError.message}</ErrorMessage>}
-          </div>
-        );
-      default:
-          // Manejar caso desconocido o devolver null
-          const exhaustiveCheck: never = preguntaUI.tipo;
-          console.warn(`Tipo de pregunta no manejado: ${exhaustiveCheck}`);
-          return null;
-    }
-  }
-  const currentSection = seccionesParaRenderizar[pagina];
   return (
-    <div className="mb-6">
-      {/* Sección actual basada en la paginación */}
-      {currentSection ? (
-        <>
-          <h2 className="text-xl font-semibold text-indigo-700 border-b pb-2 mb-4">
-            {currentSection.nombre}
-          </h2>
-          {/* Mapea sobre los items de la sección actual */}
-          <div className="mt-4">
-            {currentSection.preguntas.map((preguntaUI, itemIndex) =>
-              // Pasa la pregunta UI y su índice DENTRO de la sección
-              renderInput(preguntaUI, itemIndex)
+    <div className=" bg-white rounded-xl border border-gray-100 shadow-sm">
+      <div className=" px-6 py-4 border-b border-gray-100">
+        <h2 className=" text-base font-semibold text-gray-900">{seccion.nombre}</h2>
+        <p className=" text-xs text-gray-400 mt-0.5">{seccion.preguntas.length} preguntas</p>
+      </div>
+      <div className=" px-6 py-5 space-y-5">
+        {seccion.preguntas.map(pregunta => (
+          <div key={pregunta.preguntaId}>
+            <label className=" block text-sm font-medium text-gray-700 mb-1.5">
+              {pregunta.texto}
+              {pregunta.obligatorio && (
+                <span className=" text-red-500 ml-1">*</span>
+              )}
+            </label>
+
+            {pregunta.tipo === 'numero' && (
+              <input 
+                type="numbe"
+                value={valores[pregunta.preguntaId] ?? ''}
+                onChange={e => handleChange(pregunta.preguntaId, e.target.value)}
+                className={` w-full px-3 py-2 text-sm border rounded-lg outline-none transition-colors ${
+                  errores[pregunta.preguntaId]
+                    ? 'border-red-300 focus:border-red-400 bg-red-50'
+                    : 'border-gray-200 focus:border-[#0f1f3d]'
+                }`}
+                placeholder="Ingresa un número"
+              />
             )}
+
+            {pregunta.tipo === 'si_no' && (
+              <div className=" flex gap-3">
+                {['si', 'no'].map(opcion => (
+                  <button
+                    key={opcion}
+                    type="button"
+                    onClick={() => handleChange(pregunta.preguntaId, opcion)}
+                    className={` flex-1 py-2 px-4 text-sm font-medium rounded-lg border  transition-colors ${
+                      valores[pregunta.preguntaId] === opcion
+                        ? 'bg-[#0f1f3d] text-white border-[#0f1f3d]'
+                        : ' bg-white text-gray-600 border-gray-200 hover:border-gray-300'
+                    }`}
+                  >
+                    {opcion === 'si' ? 'Sí' : 'No'}
+                  </button>
+                ))}
+
+                
+              </div>
+            )}
+
+            {pregunta.tipo === 'opciones' && (
+              <div className="flex gap-3">
+                {[
+                  { valor: 'BUENO',   label: 'Bueno',   color: 'text-green-700 border-green-200 bg-green-50', active: 'bg-green-600 text-white border-green-600' },
+                  { valor: 'REGULAR', label: 'Regular', color: 'text-yellow-700 border-yellow-200 bg-yellow-50', active: 'bg-yellow-500 text-white border-yellow-500' },
+                  { valor: 'MALO',    label: 'Malo',    color: 'text-red-700 border-red-200 bg-red-50', active: 'bg-red-600 text-white border-red-600' },
+                ].map(opcion => (
+                  <button
+                    key={opcion.valor}
+                    type="button"
+                    onClick={() => handleChange(pregunta.preguntaId, opcion.valor)}
+                    className={`flex-1 py-2 px-3 text-sm font-medium rounded-lg border transition-colors ${
+                      valores[pregunta.preguntaId] === opcion.valor 
+                        ? opcion.active
+                        : opcion.color
+                      
+                    }`}
+                  >
+                    {opcion.label}
+                  </button>
+                ))}
+              </div>
+            )}
+
+            {pregunta.tipo === 'texto' && (
+              <textarea 
+                value={valores[pregunta.preguntaId] ?? ''}
+                onChange={e => handleChange(pregunta.preguntaId, e.target.value)}
+                rows={3}
+                placeholder="Comentarios opcionales..."
+                className=" w-full px-3 py-2 text-sm border border-gray-200 rounded-lg outline-none focus:border-[#0f1f3d] transition-colors resize-none"
+              />
+            )}
+
+            {errores[pregunta.preguntaId] && (
+              <p className="mt-1 text-xs text-red-500">{errores[pregunta.preguntaId]}</p>
+            )}
+            
           </div>
-        </>
-      ) : (
-        <p>No hay preguntas para mostrar en esta página.</p> // Manejo si no hay sección
-      )}
+        ))}
+      </div>
 
-
-      {/* Controles de navegación (se mantienen igual) */}
-      <div className="mt-6 flex justify-between">
-        {pagina > 0 ? (
+      {/* Navegación */}
+      <div className=" px-6 py-4 border-t border-gray-100 flex items-center justify-between gap-3">
+        <button
+          type="button"
+          onClick={onAnterior}
+          disabled={seccionActual === 0 || isGuardando}
+          className=" flex items-center gap-2 text-sm text-gray-600 border border-gray-200 rounded-lg px-4 py-2 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
+        >
+          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+          </svg>
+          Anterior
+        </button>
+        {!esUltima ? (
           <button
             type="button"
-            onClick={retrocederPagina}
-            className="bg-gray-500 hover:bg-gray-700 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
+            onClick={handleSiguiente}
+            disabled={isGuardando}
+            className="flex items-center gap-2 text-sm text-white bg-[#0f1f3d] rounded-lg px-4 py-2 hover:bg-[#1a3a6b] disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
           >
-            Anterior
+            {isGuardando ? 'Guardando...' : 'Siguiente'}
+            {!isGuardando && (
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+                </svg>
+            )}
           </button>
         ) : (
-           <div></div> // Placeholder para mantener el espacio si no hay botón "Anterior"
-        )}
-        {pagina < seccionesParaRenderizar.length - 1 ? (
           <button
             type="button"
-            onClick={avanzarPagina} // Llama a la función actualizada (que podría incluir trigger)
-            className="bg-blue-800 hover:bg-blue-900 text-white font-bold py-2 px-4 rounded focus:outline-none focus:shadow-outline"
+            onClick={handleFinalizar}
+            disabled={isGuardando || estaCompleto}
+            className="flex items-center gap-2 text-sm text-white bg-green-600 rounded-lg px-5 py-2 hover:bg-green-700 disabled:opacity-40 disabled:cursor-not-allowed transition-colors"
           >
-            Siguiente
+            {isGuardando ? 'Finalizando...' : estaCompleto ? 'Ya finalizado' : 'Finalizar Checklist'}
+            {!isGuardando && !estaCompleto && (
+                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+            )}
           </button>
-        ) : (
-             <div></div> // Placeholder para mantener el espacio si no hay botón "Siguiente"
         )}
       </div>
     </div>
-  );
+  )
 }

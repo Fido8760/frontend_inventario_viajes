@@ -4,12 +4,12 @@ export default function CalendarView() {
     
 
     return (
-        <>
-            <h1 className="text-3xl font-bold">Asignaciones</h1>
-            <p className="text-xl font-light text-gray-500 mt-5">En esta sección podras ver las asignaciones, utiliza el calendario para filtrarlas</p>
-
-            <AsignacionFilter />
-        
-        </>
+        <div className=" space-y-6">
+             <div className=" mb-10">
+                <h1 className="text-2xl font-medium text-gray-900">Calendario de asignaciones</h1>
+                <p className="text-sm text-gray-500 mt-0.5">Selecciona una asignación en alguna fecha en el calendario</p>
+             </div>
+             <AsignacionFilter />
+        </div>
     )
 }

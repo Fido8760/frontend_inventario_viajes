@@ -1,60 +1,47 @@
 import { Link, useNavigate } from "react-router-dom"
 import { useForm } from "react-hook-form"
+import { useEffect, useState } from "react"
+import { useMutation, useQuery } from "@tanstack/react-query"
+import { toast } from "react-toastify"
 import AsignacionForm from "../../../components/admin/AsignacionForm"
 import { AsignacionFormData } from "../../../types"
 import { crearAsignacion, getCajas, getOperadores, getUnidades } from "../../../api/AsignacionAPI"
-import { useMutation, useQuery } from "@tanstack/react-query"
-import { toast } from "react-toastify"
-import { useEffect, useState } from "react"
 
-
-
-export default function CrearAsgnacion() {
-
+export default function CrearAsignacion() {
     const navigate = useNavigate()
-    const initialValues : AsignacionFormData = {
+
+    const initialValues: AsignacionFormData = {
         unidadId: 0,
         cajaId: 0,
         operadorId: 0
     }
 
-    const { data: unidades } = useQuery({
-        queryKey: ['unidades'],
-        queryFn: getUnidades
-    })
+    const { data: unidades } = useQuery({ queryKey: ['unidades'],   queryFn: getUnidades })
+    const { data: cajas }    = useQuery({ queryKey: ['cajas'],      queryFn: getCajas })
+    const { data: operadores } = useQuery({ queryKey: ['operadores'], queryFn: getOperadores })
 
-    const { data: cajas } = useQuery({
-        queryKey: ['cajas'],
-        queryFn: getCajas
+    const { register, handleSubmit, formState: { errors }, watch, setValue } = useForm({
+        defaultValues: initialValues
     })
-
-    const { data: operadores } = useQuery({
-        queryKey: ['operadores'],
-        queryFn: getOperadores
-    })
-
-    const {register , handleSubmit, formState: {errors}, watch, setValue} = useForm({defaultValues: initialValues})
 
     const unidadIdSeleccionada = watch("unidadId")
     const [cajaDisabled, setCajaDisabled] = useState(false)
-    
+
     useEffect(() => {
-        const unidad = unidades?.find(unidad => unidad.id === +unidadIdSeleccionada)
-        if(unidad?.tipo_unidad === "MUDANCERO" || unidad?.tipo_unidad === "CAMIONETA") {
+        const unidad = unidades?.find(u => u.id === +unidadIdSeleccionada)
+        if (unidad?.tipo_unidad === "MUDANCERO" || unidad?.tipo_unidad === "CAMIONETA") {
             setCajaDisabled(true)
             setValue("cajaId", 0)
         } else {
             setCajaDisabled(false)
         }
-    },[unidadIdSeleccionada, unidades, setValue])
+    }, [unidadIdSeleccionada, unidades, setValue])
 
-    const {mutate} = useMutation({
+    const { mutate, isPending } = useMutation({
         mutationFn: crearAsignacion,
-        onError: (error) => {
-            toast.error(error.message)
-        },
+        onError: (error) => toast.error(error.message),
         onSuccess: (data) => {
-            if(data) {
+            if (data) {
                 toast.success(data.message)
                 navigate(`/asignacion/${data.id}/createChecklist`, { replace: true })
             }
@@ -62,21 +49,40 @@ export default function CrearAsgnacion() {
     })
 
     const handleForm = (formData: AsignacionFormData) => mutate(formData)
+
     return (
-        <>
-            <div className=" max-w-3xl mx-auto">
-                <h1 className=" text-3xl font-black">Paso 1: Crear Asignación</h1>
-                <p className=" text-xl font-light text-gray-500 mt-5">Selecciona la Unidad, Remolque y el nombre del Operador</p>
-                <nav className=" my-5">
-                <Link
-                    className="  bg-blue-800 hover:bg-blue-900 rounded-md px-10 py-3 text-white text-xl font-bold cursor-pointer transition-colors"
-                    to={'/?page=1'}
-                >Volver</Link>
-                </nav>
-                <form 
-                    className=" mt-10 bg-white shadow-lg p-10 rounded-lg"
+        <div className="max-w-xl mx-auto">
+
+            {/* Header */}
+            <div className="mb-6">
+                <div className="flex items-center gap-3 mb-4">
+                    <Link
+                        to="/?page=1"
+                        className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700 transition-colors no-underline"
+                    >
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+                        </svg>
+                        Volver
+                    </Link>
+                </div>
+                <div className="flex items-center gap-3">
+                    <div className="w-9 h-9 bg-[#e8edf5] rounded-lg flex items-center justify-center shrink-0">
+                        <span className="text-sm font-bold text-[#0f1f3d]">1</span>
+                    </div>
+                    <div>
+                        <h1 className="text-lg font-semibold text-gray-900">Nueva asignación</h1>
+                        <p className="text-sm text-gray-500">Selecciona la unidad, remolque y operador</p>
+                    </div>
+                </div>
+            </div>
+
+            {/* Formulario */}
+            <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
+                <form
                     onSubmit={handleSubmit(handleForm)}
                     noValidate
+                    className="p-6"
                 >
                     <AsignacionForm
                         register={register}
@@ -86,15 +92,20 @@ export default function CrearAsgnacion() {
                         operadores={operadores || []}
                         cajaDisabled={cajaDisabled}
                     />
-                    <input 
+
+                    <button
                         type="submit"
-                        value={'Crear Asignación'}
-                        className=" bg-red-800 hover:bg-red-900 w-full p-3 text-white uppercase font-bold cursor-pointer transition-colors"
-                    />
+                        disabled={isPending}
+                        className={`w-full mt-6 py-2.5 px-4 text-sm font-medium text-white rounded-lg transition-colors ${
+                            isPending
+                                ? 'bg-gray-400 cursor-not-allowed'
+                                : 'bg-[#0f1f3d] hover:bg-[#1a3a6b]'
+                        }`}
+                    >
+                        {isPending ? 'Creando...' : 'Crear asignación'}
+                    </button>
                 </form>
-                
             </div>
-            
-        </>
+        </div>
     )
 }

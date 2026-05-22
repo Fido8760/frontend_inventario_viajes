@@ -1,32 +1,29 @@
 import { jsPDF } from 'jspdf';
 import autoTable, { Styles, FontStyle } from 'jspdf-autotable';
-import { AsignacionByIdApiResponse, PreguntaRespuesta } from '../types';
-import plantillaCompleta from '../views/admin/checklist/preguntas.json';
+import { AsignacionByIdApiResponse, RespuestaItem } from '../types';
 
-// 1. Definir tipos para los estilos
 interface PdfTableStyles extends Partial<Styles> {
     fillColor?: [number, number, number] | string;
     textColor?: number;
     fontStyle?: FontStyle;
 }
 
-// 2. Configuración de estilos con tipos correctos
 const PDFStyles = {
-    title: { 
-        fontSize: 18, 
-        color: [41, 128, 185] as [number, number, number] 
+    title: {
+        fontSize: 18,
+        color: [15, 31, 61] as [number, number, number]
     },
-    subtitle: { 
-        fontSize: 14, 
-        color: [44, 62, 80] as [number, number, number] 
+    subtitle: {
+        fontSize: 11,
+        color: [80, 80, 80] as [number, number, number]
     },
     header: {
-        fillColor: [41, 128, 185] as [number, number, number],
+        fillColor: [15, 31, 61] as [number, number, number],
         textColor: 255,
         fontStyle: 'bold' as FontStyle
     },
     sectionHeader: {
-        fillColor: [230, 230, 230] as [number, number, number],
+        fillColor: [232, 237, 245] as [number, number, number],
         textColor: 0,
         fontStyle: 'bold' as FontStyle
     }
@@ -37,212 +34,151 @@ interface ExportPdfOptions {
     includeImages?: boolean;
     includeLogo?: boolean;
 }
-const addLogoToPdf = async (doc: jsPDF): Promise<void> => {
-    try {
-        // Usa la misma ruta que tu componente Logo
-        const logoUrl = '/AMADO_LOGO.png'; // Asegúrate que esta ruta es correcta
-        const imgData = await loadImage(logoUrl);
-        
-        // Configuración del logo (ajusta según necesites)
-        const logoWidth = 40;
-        const logoHeight = 20;
-        const logoX = doc.internal.pageSize.width - logoWidth - 15; // Derecha con margen
-        const logoY = 10; // Margen superior
-        
-        doc.addImage(imgData, 'PNG', logoX, logoY, logoWidth, logoHeight);
-    } catch (error) {
-        console.warn('No se pudo cargar el logo:', error);
-        // Puedes agregar un toast de error aquí si lo deseas
-    }
+
+const loadImage = async (
+    url: string
+): Promise<{
+    data: string;
+    width: number;
+    height: number;
+}> => {
+
+    return new Promise((resolve, reject) => {
+
+        const img = new Image();
+
+        img.crossOrigin = 'Anonymous';
+
+        img.onload = () => {
+
+            const canvas = document.createElement('canvas');
+            const ctx = canvas.getContext('2d');
+
+            if (!ctx) {
+                reject('No context');
+                return;
+            }
+
+            canvas.width = img.width;
+            canvas.height = img.height;
+
+            // Fondo blanco para evitar PNG/WebP negros
+            ctx.fillStyle = '#FFFFFF';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            ctx.drawImage(img, 0, 0);
+
+            const data = canvas.toDataURL(
+                'image/jpeg',
+                0.92
+            );
+
+            resolve({
+                data,
+                width: img.width,
+                height: img.height
+            });
+        };
+
+        img.onerror = reject;
+
+        img.src = url;
+    });
 };
-// 3. Función principal para exportar a PDF
-export const exportChecklistToPdf = async (
-    data: AsignacionByIdApiResponse,
-    options: ExportPdfOptions = {}
+
+const addLogoToPdf = async (
+    doc: jsPDF
 ): Promise<void> => {
-    const doc = new jsPDF();
-    const fecha = new Date(data.createdAt).toLocaleDateString();
-    const ultimoChecklist = data.checklist;
-    const respuestasGuardadas = ultimoChecklist?.respuestas;
-    const imagenes = ultimoChecklist?.imagenes;
-    const tipoUnidadActual = data.unidad?.tipo_unidad;
 
-    if (options.includeLogo) {
-        await addLogoToPdf(doc);
+    try {
+
+        const logo = await loadImage('/AMADO_LOGO.png');
+
+        const logoWidth = 30;
+        const logoHeight = 15;
+
+        const logoX =
+            doc.internal.pageSize.width
+            - logoWidth
+            - 14;
+
+        doc.addImage(
+            logo.data,
+            'JPEG',
+            logoX,
+            10,
+            logoWidth,
+            logoHeight
+        );
+
+    } catch (error) {
+
+        console.warn(error);
     }
+};
 
-    // Crear mapa de respuestas
-    const respuestasMap = createRespuestasMap(respuestasGuardadas);
+const addFooter = (doc: jsPDF) => {
 
-    // Configuración inicial
-    const fileName = options.fileName || `Checklist_${data.unidad?.no_unidad || 'asignacion'}_${fecha.replace(/\//g, '-')}.pdf`;
+    const pageCount = doc.getNumberOfPages();
 
-    // --- Encabezado ---
-    doc.setFontSize(PDFStyles.title.fontSize);
-    doc.setTextColor(...PDFStyles.title.color);
-    
-    // Ajustar posición Y inicial según si hay logo
-    let yPosition = options.includeLogo ? 35 : 20;
-    
-    doc.text(`Checklist Unidad ${data.unidad?.no_unidad || 'N/A'}`, 14, yPosition);
-    yPosition += 10;
+    const pageHeight =
+        doc.internal.pageSize.height;
 
-    // Información básica
-    doc.setFontSize(PDFStyles.subtitle.fontSize);
-    doc.setTextColor(...PDFStyles.subtitle.color);
-    
-    doc.text(`Operador: ${data.operador?.nombre || 'N/A'} ${data.operador?.apellido_p || ''}`, 14, yPosition);
-    yPosition += 7;
-    doc.text(`Placas: ${data.unidad?.u_placas || 'N/A'}`, 14, yPosition);
-    yPosition += 7;
-    doc.text(`Tipo: ${tipoUnidadActual || 'N/A'}`, 14, yPosition);
-    yPosition += 7;
-    doc.text(`Fecha: ${fecha}`, 14, yPosition);
-    yPosition += 15;
+    const pageWidth =
+        doc.internal.pageSize.width;
 
-    // --- Tabla de información general ---
-    const generalInfoData = [
-        ['Usuario', data.usuario?.name || 'N/A'],
-        ['Caja', data.caja ? `${data.caja.c_placas} - ${data.caja.c_marca}` : 'N/A'],
-        ['Vigencia Licencia', data.operador?.vigencia_lic || 'N/A'],
-        ['Vigencia Apto Médico', data.operador?.vigencia_apto || 'N/A']
-    ];
+    for (let i = 1; i <= pageCount; i++) {
 
-    autoTable(doc, {
-        startY: yPosition,
-        head: [['Campo', 'Valor']],
-        body: generalInfoData,
-        styles: getTableStyles(),
-        headStyles: PDFStyles.header as Styles,
-        margin: { left: 14 }
-    });
+        doc.setPage(i);
 
-    yPosition = (doc as any).lastAutoTable.finalY + 10;
+        doc.setFontSize(9);
 
-    // --- Checklist ---
-    if (plantillaCompleta?.preguntas && Array.isArray(plantillaCompleta.preguntas)) {
-        for (const seccionPlantilla of plantillaCompleta.preguntas) {
-        const preguntasRelevantes = seccionPlantilla.preguntas?.filter(pPlantilla => 
-            !pPlantilla.aplicaA || 
-            pPlantilla.aplicaA.toLowerCase() === 'todos' || 
-            pPlantilla.aplicaA.toLowerCase() === tipoUnidadActual?.toLowerCase()
-        ) || [];
+        doc.setTextColor(120);
 
-        if (preguntasRelevantes.length === 0) continue;
-
-        // Sección del checklist
-        doc.setFontSize(14);
-        doc.setTextColor(...PDFStyles.title.color);
-        doc.text(seccionPlantilla.nombre, 14, yPosition);
-        yPosition += 8;
-
-        // Tabla de preguntas/respuestas
-        const tableData = preguntasRelevantes.map(preguntaPlantilla => {
-            const respuestaGuardada = respuestasMap.get(preguntaPlantilla.idPregunta);
-            return [
-            preguntaPlantilla.pregunta,
-            formatPdfAnswer(respuestaGuardada, preguntaPlantilla.tipo)
-            ];
-        });
-
-        autoTable(doc, {
-            startY: yPosition,
-            head: [['Pregunta', 'Respuesta']],
-            body: tableData,
-            styles: getTableStyles(),
-            headStyles: PDFStyles.sectionHeader as Styles,
-            columnStyles: {
-            0: { fontStyle: 'bold' as FontStyle },
-            1: { halign: 'left' as const }
-            },
-            margin: { left: 14 }
-        });
-
-        yPosition = (doc as any).lastAutoTable.finalY + 10;
-        }
-    }
-
-    // --- Imágenes ---
-    if (options.includeImages && imagenes?.length) {
-        doc.addPage();
-        doc.setFontSize(14);
-        doc.setTextColor(...PDFStyles.title.color);
-        doc.text('Imágenes Adjuntas', 14, 20);
-        
-        let imageY = 30;
-        const imageWidth = 160;
-        const imageHeight = 120;
-        
-        for (const imagen of imagenes) {
-        try {
-            const imgData = await loadImage(imagen.urlImagen);
-            doc.addImage(imgData, 'JPEG', 25, imageY, imageWidth, imageHeight);
-            imageY += imageHeight + 10;
-            
-            if (imageY + imageHeight > doc.internal.pageSize.height - 20) {
-            doc.addPage();
-            imageY = 20;
+        doc.text(
+            `Página ${i} de ${pageCount}`,
+            pageWidth / 2,
+            pageHeight - 10,
+            {
+                align: 'center'
             }
-        } catch (error) {
-            console.error('Error al cargar imagen:', error);
-        }
-        }
+        );
+    }
+};
+
+const formatValor = (
+    item: RespuestaItem
+): string => {
+
+    const val = item.valor;
+    const tipo = item.pregunta?.tipo;
+
+    if (!val || val === '') {
+        return 'Sin respuesta';
     }
 
-    // Guardar el PDF
-    doc.save(fileName);
-};
+    switch (tipo) {
 
-// --- Funciones auxiliares ---
+        case 'si_no':
+            return val === 'si'
+                ? 'Sí'
+                : 'No';
 
-// 4. Función para crear mapa de respuestas
-const createRespuestasMap = (respuestasGuardadas: any): Map<number, PreguntaRespuesta> => {
-    const map = new Map<number, PreguntaRespuesta>();
-    if (respuestasGuardadas?.secciones) {
-        for (const seccion of respuestasGuardadas.secciones) {
-        if (seccion.preguntas) {
-            for (const pregRespuesta of seccion.preguntas) {
-            if (typeof pregRespuesta.idPregunta === 'number') {
-                map.set(pregRespuesta.idPregunta, pregRespuesta);
-            }
-            }
-        }
-        }
+        case 'opciones':
+            return val.charAt(0).toUpperCase()
+                + val.slice(1).toLowerCase();
+
+        case 'numero':
+            return `${val} km`;
+
+        case 'texto':
+            return val;
+
+        default:
+            return val;
     }
-    return map;
 };
 
-// 5. Función para formatear respuestas
-const formatPdfAnswer = (respuesta: PreguntaRespuesta | undefined, tipo: string): string => {
-  if (!respuesta?.respuesta) return 'N/A';
-  
-  switch (tipo) {
-    case 'si_no':
-      return respuesta.respuesta === 'si' ? 'Sí' : 'No';
-    case 'opciones':
-      return String(respuesta.respuesta).charAt(0).toUpperCase() + 
-             String(respuesta.respuesta).slice(1).toLowerCase();
-    case 'numero':
-      return `${respuesta.respuesta} km`;
-    case 'texto':
-      return `"${respuesta.respuesta}"`;
-    default:
-      return String(respuesta.respuesta);
-  }
-};
-
-// 6. Función para cargar imágenes
-const loadImage = async (url: string): Promise<string> => {
-    const response = await fetch(url);
-    const blob = await response.blob();
-    return new Promise((resolve) => {
-        const reader = new FileReader();
-        reader.onloadend = () => resolve(reader.result as string);
-        reader.readAsDataURL(blob);
-    });
-};
-
-// 7. Función helper para estilos de tabla
 const getTableStyles = (): PdfTableStyles => ({
     cellPadding: 4,
     fontSize: 10,
@@ -250,3 +186,437 @@ const getTableStyles = (): PdfTableStyles => ({
     valign: 'middle',
     fontStyle: 'normal'
 });
+
+export const exportChecklistToPdf = async (
+    data: AsignacionByIdApiResponse,
+    options: ExportPdfOptions = {}
+): Promise<void> => {
+
+    const doc = new jsPDF();
+
+    const fecha = new Date(
+        data.createdAt
+    ).toLocaleDateString('es-MX');
+
+    const checklist = data.checklist;
+
+    const respuestas =
+        checklist?.respuestas ?? [];
+
+    const imagenes =
+        checklist?.imagenes ?? [];
+
+    if (options.includeLogo) {
+        await addLogoToPdf(doc);
+    }
+
+    let y = options.includeLogo
+        ? 38
+        : 20;
+
+    // =================================================
+    // HEADER
+    // =================================================
+
+    doc.setFontSize(PDFStyles.title.fontSize);
+
+    doc.setTextColor(...PDFStyles.title.color);
+
+    doc.text(
+        `Checklist — Unidad ${data.unidad?.no_unidad ?? 'N/A'}`,
+        14,
+        y
+    );
+
+    y += 10;
+
+    doc.setFontSize(
+        PDFStyles.subtitle.fontSize
+    );
+
+    doc.setTextColor(
+        ...PDFStyles.subtitle.color
+    );
+
+    doc.text(
+        `Operador: ${data.operador?.nombre ?? ''} ${data.operador?.apellido_p ?? ''} ${data.operador?.apellido_m ?? ''}`.trim(),
+        14,
+        y
+    );
+
+    y += 6;
+
+    doc.text(
+        `Placas: ${data.unidad?.u_placas ?? 'N/A'} | Tipo: ${data.unidad?.tipo_unidad ?? 'N/A'}`,
+        14,
+        y
+    );
+
+    y += 6;
+
+    doc.text(
+        `Fecha: ${fecha}`,
+        14,
+        y
+    );
+
+    y += 12;
+
+    // =================================================
+    // INFO GENERAL
+    // =================================================
+
+    autoTable(doc, {
+
+        startY: y,
+
+        head: [['Campo', 'Valor']],
+
+        body: [
+            [
+                'Estado checklist',
+                checklist?.status === 'COMPLETO'
+                    ? 'Completado'
+                    : 'En progreso'
+            ]
+        ],
+
+        styles: getTableStyles(),
+
+        headStyles:
+            PDFStyles.header as Styles,
+
+        bodyStyles: {
+            valign: 'middle'
+        },
+
+        theme: 'grid',
+
+        rowPageBreak: 'avoid',
+
+        margin: { left: 14 }
+    });
+
+    y =
+        (doc as any).lastAutoTable.finalY
+        + 10;
+
+    // =================================================
+    // RESPUESTAS
+    // =================================================
+
+    const seccionesMap = new Map<
+        string,
+        RespuestaItem[]
+    >();
+
+    const ordenadas = [...respuestas].sort(
+        (a, b) =>
+            (a.pregunta?.orden ?? 0)
+            - (b.pregunta?.orden ?? 0)
+    );
+
+    for (const r of ordenadas) {
+
+        const seccion =
+            r.pregunta?.seccion ?? 'General';
+
+        if (!seccionesMap.has(seccion)) {
+
+            seccionesMap.set(seccion, []);
+        }
+
+        seccionesMap
+            .get(seccion)!
+            .push(r);
+    }
+
+    for (const [nombre, items] of seccionesMap.entries()) {
+
+        doc.setFontSize(12);
+
+        doc.setTextColor(
+            ...PDFStyles.title.color
+        );
+
+        doc.text(nombre, 14, y);
+
+        y += 6;
+
+        const tableData = items.map(
+            item => [
+                item.pregunta?.texto ?? '',
+                formatValor(item)
+            ]
+        );
+
+        autoTable(doc, {
+
+            startY: y,
+
+            head: [['Pregunta', 'Respuesta']],
+
+            body: tableData,
+
+            styles: getTableStyles(),
+
+            headStyles:
+                PDFStyles.sectionHeader as Styles,
+
+            bodyStyles: {
+                valign: 'middle'
+            },
+
+            theme: 'grid',
+
+            rowPageBreak: 'avoid',
+
+            columnStyles: {
+                0: {
+                    fontStyle: 'bold',
+                    cellWidth: 120
+                },
+                1: {
+                    halign: 'left'
+                }
+            },
+
+            margin: { left: 14 }
+        });
+
+        y =
+            (doc as any).lastAutoTable.finalY
+            + 10;
+    }
+
+    // =================================================
+    // IMÁGENES
+    // =================================================
+
+    if (
+        options.includeImages
+        && imagenes.length > 0
+    ) {
+
+        doc.addPage();
+
+        doc.setFontSize(14);
+
+        doc.setTextColor(
+            ...PDFStyles.title.color
+        );
+
+        doc.text(
+            'Evidencia Fotográfica',
+            14,
+            20
+        );
+
+        const pageWidth =
+            doc.internal.pageSize.width;
+
+        const pageHeight =
+            doc.internal.pageSize.height;
+
+        const margin = 15;
+
+        const gap = 10;
+
+        const columns = 2;
+
+        const imageWidth =
+            (
+                pageWidth
+                - margin * 2
+                - gap
+            ) / columns;
+
+        const maxImageHeight = 70;
+
+        let x = margin;
+
+        let imageY = 30;
+
+        let col = 0;
+
+        for (const imagen of imagenes) {
+
+            if (imagen.fieldId === 'firma') {
+                continue;
+            }
+
+            try {
+
+                const img = await loadImage(
+                    imagen.urlImagen
+                );
+
+                let renderWidth =
+                    imageWidth;
+
+                let renderHeight =
+                    (
+                        img.height
+                        * renderWidth
+                    ) / img.width;
+
+                if (
+                    renderHeight
+                    > maxImageHeight
+                ) {
+
+                    renderHeight =
+                        maxImageHeight;
+
+                    renderWidth =
+                        (
+                            img.width
+                            * renderHeight
+                        ) / img.height;
+                }
+
+                // salto página
+                if (
+                    imageY
+                    + renderHeight
+                    + 20
+                    > pageHeight - 20
+                ) {
+
+                    doc.addPage();
+
+                    x = margin;
+
+                    imageY = 20;
+
+                    col = 0;
+                }
+
+                // centrar
+                const offsetX =
+                    (
+                        imageWidth
+                        - renderWidth
+                    ) / 2;
+
+                // borde
+                doc.setDrawColor(220);
+
+                doc.rect(
+                    x + offsetX - 1,
+                    imageY - 1,
+                    renderWidth + 2,
+                    renderHeight + 2
+                );
+
+                // imagen
+                doc.addImage(
+                    img.data,
+                    'JPEG',
+                    x + offsetX,
+                    imageY,
+                    renderWidth,
+                    renderHeight
+                );
+
+                // label
+                doc.setFontSize(8);
+
+                doc.setTextColor(90);
+
+                doc.text(
+                    imagen.fieldId?.replace(/_/g, ' ') ?? '',
+                    x,
+                    imageY + renderHeight + 5
+                );
+
+                col++;
+
+                if (col >= columns) {
+
+                    col = 0;
+
+                    x = margin;
+
+                    imageY +=
+                        maxImageHeight
+                        + 20;
+
+                } else {
+
+                    x +=
+                        imageWidth
+                        + gap;
+                }
+
+            } catch (error) {
+
+                console.error(error);
+            }
+        }
+
+        // =============================================
+        // FIRMA
+        // =============================================
+
+        const firma = imagenes.find(
+            i => i.fieldId === 'firma'
+        );
+
+        if (firma) {
+
+            doc.addPage();
+
+            const firmaImg =
+                await loadImage(
+                    firma.urlImagen
+                );
+
+            doc.setFontSize(14);
+
+            doc.setTextColor(
+                ...PDFStyles.title.color
+            );
+
+            doc.text(
+                'Firma del Operador',
+                14,
+                25
+            );
+
+            doc.setDrawColor(220);
+
+            doc.rect(
+                39,
+                49,
+                122,
+                62
+            );
+
+            doc.addImage(
+                firmaImg.data,
+                'JPEG',
+                40,
+                50,
+                120,
+                60
+            );
+        }
+    }
+
+    // =================================================
+    // FOOTER
+    // =================================================
+
+    addFooter(doc);
+
+    // =================================================
+    // SAVE
+    // =================================================
+
+    const fileName =
+        options.fileName
+        ?? `Checklist_${data.unidad?.no_unidad ?? 'unidad'}_${fecha.replace(/\//g, '-')}.pdf`;
+
+    doc.save(fileName);
+};
