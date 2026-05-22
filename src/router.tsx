@@ -3,7 +3,6 @@ import LoginView from './views/auth/LoginView'
 import AuthLayout from './layouts/AuthLayout'
 import AppLayout from './layouts/AppLayout'
 import DashboardView from './views/admin/DashboardView'
-import CrearAsgnacion from './views/admin/asignacion/CrearAsgnacionView'
 import EditarAsignacionView from './views/admin/asignacion/EditarAsignacionView'
 import ChecklistCreateView from './views/admin/checklist/ChecklistCreateView'
 import ChecklistImageUploadView from './views/admin/checklist/ChecklistImageUploadView'
@@ -18,6 +17,7 @@ import ChecklistLlenarView from './views/admin/checklist/ChecklistLlenarView'
 import AsignacionDetalleView from './views/admin/asignacion/AsignacionDetalleView'
 import AsignacionGalleryView from './views/admin/asignacion/AsignacionGalleryView'
 import KpiDashboardView from './views/admin/kpis/KpiDashboardView'
+import CrearAsignacion from './views/admin/asignacion/CrearAsignacionView'
 
 
 export default function Router() {
@@ -26,7 +26,7 @@ export default function Router() {
             <Routes>
                 <Route element={<AppLayout />}>
                     <Route path='/' element={<DashboardView />} index />
-                    <Route path='/asignacion/create' element={<CrearAsgnacion />}  />
+                    <Route path='/asignacion/create' element={<CrearAsignacion />}  />
                     <Route path='/asignacion/:asignacionId/edit' element={<EditarAsignacionView />}  />
                     <Route path='/asignacion/:asignacionId' element={<AsignacionDetalleView />}  />
                     <Route path='/asignacion/:asignacionId/createChecklist' element={<ChecklistCreateView />}  />
