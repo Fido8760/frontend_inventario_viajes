@@ -102,7 +102,7 @@ export default function ChecklistForm({ seccion, seccionActual, totalSecciones, 
 
             {pregunta.tipo === 'numero' && (
               <input 
-                type="numbe"
+                type="number"
                 value={valores[pregunta.preguntaId] ?? ''}
                 onChange={e => handleChange(pregunta.preguntaId, e.target.value)}
                 className={` w-full px-3 py-2 text-sm border rounded-lg outline-none transition-colors ${
