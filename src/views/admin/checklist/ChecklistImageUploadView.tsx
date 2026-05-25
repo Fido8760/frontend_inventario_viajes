@@ -51,13 +51,6 @@ export default function ChecklistImageUploadView() {
 
     const uploadMutation = useMutation({
         mutationFn: uploadImage,
-        onSuccess: (data, vars) => {
-            setUploadedFields(prev => ({ ...prev, [vars.fieldId]: true }));
-            toast.success(data.message || `Imagen ${vars.fieldId} subida`);
-        },
-        onError: (error: any) => {
-            toast.error(error.message || "Error al subir la imagen");
-        }
     });
 
     const finalizeMutation = useMutation({
@@ -74,21 +67,54 @@ export default function ChecklistImageUploadView() {
         if (!file) return;
 
         setUploadingFields(prev => ({ ...prev, [fieldId]: true }));
-        uploadMutation.mutate({ file, asignacionId: +asignacionId!, checklistId: +checklistId!, fieldId }, {
-            onSettled: () => setUploadingFields(prev => ({ ...prev, [fieldId]: false }))
-        });
 
+        // Preparar el reader pero sin leerlo aún
         const reader = new FileReader();
-        reader.onloadend = () => setImageUrls(prev => ({ ...prev, [fieldId]: reader.result as string }));
-        reader.readAsDataURL(file);
+
+        uploadMutation.mutate(
+            { file, asignacionId: +asignacionId!, checklistId: +checklistId!, fieldId },
+            {
+                onSuccess: (data) => {
+                    // Definir el handler ANTES de leer
+                    reader.onloadend = () => {
+                        setImageUrls(prev => ({ ...prev, [fieldId]: reader.result as string }));
+                    };
+                    reader.readAsDataURL(file); // Leer aquí, cuando ya sabes que fue exitoso
+                    setUploadedFields(prev => ({ ...prev, [fieldId]: true }));
+                    toast.success(data.message || `Imagen ${fieldId} subida`);
+                },
+                onError: (error: any) => {
+                    setImageUrls(prev => ({ ...prev, [fieldId]: null }));
+                    setUploadedFields(prev => ({ ...prev, [fieldId]: false }));
+                    toast.error(error.message || "Error al subir la imagen");
+                },
+                onSettled: () => {
+                    setUploadingFields(prev => ({ ...prev, [fieldId]: false }));
+                }
+            }
+        );
     };
 
     const handleSaveSignature = (file: File) => {
-        uploadMutation.mutate({ file, asignacionId: +asignacionId!, checklistId: +checklistId!, fieldId: "firma" });
-        setUploadedFields(prev => ({ ...prev, firma: true }));
         const reader = new FileReader();
-        reader.onloadend = () => setImageUrls(prev => ({ ...prev, firma: reader.result as string }));
         reader.readAsDataURL(file);
+
+        uploadMutation.mutate(
+            { file, asignacionId: +asignacionId!, checklistId: +checklistId!, fieldId: "firma" },
+            {
+                onSuccess: () => {
+                    reader.onloadend = () => {
+                        setImageUrls(prev => ({ ...prev, firma: reader.result as string }));
+                    };
+                    setUploadedFields(prev => ({ ...prev, firma: true }));
+                },
+                onError: (error: any) => {
+                    setImageUrls(prev => ({ ...prev, firma: null }));
+                    setUploadedFields(prev => ({ ...prev, firma: false }));
+                    toast.error(error.message || "Error al subir la firma");
+                }
+            }
+        );
     };
 
     const canFinalize = requiredFields.every(f => uploadedFields[f.id]) && uploadedFields["firma"];
