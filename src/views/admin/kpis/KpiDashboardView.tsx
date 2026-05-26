@@ -2,6 +2,7 @@ import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 
 import { formatDate } from '../../../utils/formatDate'
 import { ChecklistSinFotos, CompletitudPorTipo, UnidadCritica } from '../../../types'
 import { useKpisResumen, useSinFotografias, useUnidadesCriticas } from '../../../hooks/useDashboard'
+import { useState } from 'react'
 
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
@@ -168,51 +169,56 @@ function EstadoChecklistChart({ data, loading }: {
 
 // ─── Tabla unidades críticas ──────────────────────────────────────────────────
 
-function UnidadesCriticasTable({ data, loading }: { data?: UnidadCritica[]; loading: boolean }) {
+function UnidadesCriticasTable() {
+    const [page, setPage] = useState(1);
+    const { data: response, isLoading} = useUnidadesCriticas(page);
+    const criticas = response?.data;
+    const meta = response?.meta;
+    const totalPages = meta?.totalPages ?? 1;
+
     return (
-        <div className="bg-white rounded-xl border border-gray-100 overflow-hidden">
-            <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
+        <div className=' bg-white rounded-xl border border-gray-100 overflow-hidden'>
+            <div className='px-5 py-4 border-b border-gray-100 flex items-center justify-between'>
                 <div>
-                    <p className="text-sm font-medium text-gray-900">Unidades críticas</p>
-                    <p className="text-xs text-gray-400 mt-0.5">Sin checklist o más de 30 días sin revisión</p>
+                    <p className=' text-sm font-medium text-gray-900'>Unidades Criticas</p>
+                    <p className=' text-xs text-gray-400 mt-0.5'>Sin checklist o más de 30 días sin revisión</p>
                 </div>
-                {data && (
-                    <span className="text-xs font-medium bg-red-50 text-red-600 px-2.5 py-1 rounded-full">
-                        {data.length} unidades
+                {meta && (
+                    <span className=' text-xs font-medium bg-red-50 text-red-600 px-2.5 py-1 rounded-full'>
+                        {meta.total} unidades
                     </span>
                 )}
             </div>
-
-            {loading ? (
-                <div className="p-5 space-y-3">
-                    {[...Array(4)].map((_, i) => <Skeleton key={i} className="h-10 w-full" />)}
+            {isLoading ? (
+                <div className=' p-5 space-y-3'>
+                    {[...Array(4)].map((_, i) => <Skeleton key={i} className='h-10 w-full' />)}
                 </div>
-            ) : !data?.length ? (
-                <div className="flex flex-col items-center justify-center py-12 text-gray-400">
+            ) : !criticas?.length ? (
+                <div className=' flex flex-col items-center justify-center py-12 text-gray-400'>
                     <svg className="w-8 h-8 mb-2 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
                     </svg>
                     <p className="text-sm">Todas las unidades al día</p>
                 </div>
             ) : (
-                <div className="overflow-x-auto">
-                    <table className="w-full text-sm">
+                <div className=' overflow-x-auto'>
+                    <table className=' w-full text-sm'>
                         <thead>
-                            <tr className="text-left">
-                                <th className="px-5 py-3 text-xs font-medium text-gray-400 uppercase tracking-wide">Unidad</th>
-                                <th className="px-5 py-3 text-xs font-medium text-gray-400 uppercase tracking-wide">Tipo</th>
-                                <th className="px-5 py-3 text-xs font-medium text-gray-400 uppercase tracking-wide">Placas</th>
-                                <th className="px-5 py-3 text-xs font-medium text-gray-400 uppercase tracking-wide">Motivo</th>
-                                <th className="px-5 py-3 text-xs font-medium text-gray-400 uppercase tracking-wide">Días sin revisión</th>
+                            <tr className=' text-left'>
+                                <th className='px-5 py-3 text-xs font-medium text-gray-400 uppercase tracking-wide'>Unidad</th>
+                                <th className='px-5 py-3 text-xs font-medium text-gray-400 uppercase tracking-wide'>Tipo</th>
+                                <th className='px-5 py-3 text-xs font-medium text-gray-400 uppercase tracking-wide'>Placas</th>
+                                <th className='px-5 py-3 text-xs font-medium text-gray-400 uppercase tracking-wide'>Motivo</th>
+                                <th className='px-5 py-3 text-xs font-medium text-gray-400 uppercase tracking-wide'>Días sin revisión</th>
                             </tr>
                         </thead>
-                        <tbody className="divide-y divide-gray-50">
-                            {data.map((u) => (
-                                <tr key={u.id} className="hover:bg-gray-50 transition-colors">
-                                    <td className="px-5 py-3.5 font-medium text-gray-900">{u.no_unidad}</td>
-                                    <td className="px-5 py-3.5 text-gray-600 capitalize">{u.tipo_unidad.toLowerCase()}</td>
-                                    <td className="px-5 py-3.5 text-gray-500">{u.u_placas}</td>
-                                    <td className="px-5 py-3.5">
+                        <tbody className=' divide-y divide-gray-50'>
+                            {criticas.map((u) => (
+                                <tr key={u.id} className=' hover:bg-gray-50 transition-colors'>
+                                    <td className='px-5 py-3.5 font-medium text-gray-900'>{u.no_unidad}</td>
+                                    <td className='px-5 py-3.5 text-gray-600 capitalize'>{u.tipo_unidad.toLowerCase()}</td>
+                                    <td className=' px-5 py-3.5 text-gray-500'>{u.u_placas}</td>
+                                    <td className=' px-5 py-3.5'>
                                         <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${
                                             u.motivo === 'sin_checklist'
                                                 ? 'bg-gray-100 text-gray-700'
@@ -221,13 +227,36 @@ function UnidadesCriticasTable({ data, loading }: { data?: UnidadCritica[]; load
                                             {motivoLabel(u.motivo)}
                                         </span>
                                     </td>
-                                    <td className="px-5 py-3.5 text-gray-500">
-                                        {u.diasSinRevision !== null ? `${u.diasSinRevision} días` : '—'}
+                                    <td className=' px-5 py-3.5 text-gray-500'>
+                                        {u.diasSinRevision !== null ? `${u.diasSinRevision}` : `-`}
                                     </td>
                                 </tr>
                             ))}
                         </tbody>
                     </table>
+                    {totalPages > 1 && (
+                        <div className=' flex items-center justify-between px-5 py-3 border-t border-gray-100'>
+                            <p className=' text-xs text-gray-400'>
+                                Página {meta?.page} de {totalPages}
+                            </p>
+                            <div className='flex gap-1'>
+                                <button
+                                    onClick={() => setPage(p => Math.max(1, p - 1))}
+                                    disabled={page === 1}
+                                    className=' px-3 py-1.5 text-xs rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors'
+                                >
+                                    Anterior
+                                </button>
+                                <button
+                                    onClick={() => setPage(p => Math.min(totalPages, p + 1))}
+                                    disabled={page === totalPages}
+                                    className=' px-3 py-1.5 rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed'
+                                >
+                                    Siguiente
+                                </button>
+                            </div>
+                        </div>
+                    )}
                 </div>
             )}
         </div>
@@ -294,7 +323,6 @@ function SinFotografiasTable({ data, loading }: { data?: ChecklistSinFotos[]; lo
 
 export default function KpiDashboardView() {
     const { data: kpis,     isLoading: loadingKpis     } = useKpisResumen()
-    const { data: criticas, isLoading: loadingCriticas } = useUnidadesCriticas()
     const { data: sinFotos, isLoading: loadingSinFotos } = useSinFotografias()
 
     return (
@@ -363,7 +391,7 @@ export default function KpiDashboardView() {
             </div>
 
             {/* Tablas */}
-            <UnidadesCriticasTable data={criticas} loading={loadingCriticas} />
+            <UnidadesCriticasTable />
             <SinFotografiasTable   data={sinFotos}  loading={loadingSinFotos} />
 
         </div>

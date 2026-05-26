@@ -410,10 +410,18 @@ export const unidadCriticaSchema = z.object({
     u_placas:        z.string(),
     motivo:          z.enum(['sin_checklist', 'mas_30_dias']),
     diasSinRevision: z.number().nullable(),
-    ultimoChecklist: z.string().nullable(), // ISO date string
+    ultimoChecklist: z.string().nullable(), 
 })
 
-export const unidadesCriticasSchema = z.array(unidadCriticaSchema)
+export const unidadesCriticasSchema = z.object({
+    data: z.array(unidadCriticaSchema),
+    meta: z.object({
+        total: z.number(),
+        page: z.number(),
+        limit: z.number(),
+        totalPages: z.number(),
+    })
+})
 
 // ─── /dashboard/kpis/sin-fotografias ─────────────────────────────────────────
 export const checklistSinFotosSchema = z.object({
@@ -433,4 +441,5 @@ export const sinFotografiasSchema = z.array(checklistSinFotosSchema)
 export type CompletitudPorTipo  = z.infer<typeof completitudPorTipoSchema>
 export type KpisResumen         = z.infer<typeof kpisResumenSchema>
 export type UnidadCritica       = z.infer<typeof unidadCriticaSchema>
+export type UnidadesCriticasResponse = z.infer<typeof unidadesCriticasSchema>
 export type ChecklistSinFotos   = z.infer<typeof checklistSinFotosSchema>

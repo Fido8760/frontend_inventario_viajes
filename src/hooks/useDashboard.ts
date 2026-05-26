@@ -10,11 +10,12 @@ export function useKpisResumen() {
     })
 }
  
-export function useUnidadesCriticas() {
+export function useUnidadesCriticas(page: number, limit: number = 10) {
     return useQuery({
-        queryKey: ['dashboard', 'criticas'],
-        queryFn:  getUnidadesCriticas,
+        queryKey: ['dashboard', 'criticas', page],
+        queryFn:  () => getUnidadesCriticas({ page, limit }),
         staleTime: 1000 * 60 * 5,
+        placeholderData: (prev) => prev,
     })
 }
  

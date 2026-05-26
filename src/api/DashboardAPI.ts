@@ -19,10 +19,12 @@ export async function getKpisResumen(): Promise<KpisResumen> {
     }
 }
 
-export async function getUnidadesCriticas(): Promise<UnidadCritica[]> {
+export const getUnidadesCriticas = async ({ page = 1, limit = 10 } = {}) => {
     try {
-        const { data } = await api.get('/dashboard/kpis/criticas')
-        const result = unidadesCriticasSchema.safeParse(data)
+        const { data } = await api.get('/dashboard/kpis/criticas', {
+            params: { page, limit }
+        })
+        const result = unidadesCriticasSchema.safeParse(data);
         if (!result.success) {
             console.error('Zod error getUnidadesCriticas:', result.error)
             throw new Error('Respuesta del servidor inválida')
