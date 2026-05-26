@@ -1,6 +1,6 @@
 import { isAxiosError } from 'axios'
 import api from '../lib/axios' // ajusta el path a tu instancia de axios
-import { kpisResumenSchema, unidadesCriticasSchema, sinFotografiasSchema, type KpisResumen, type UnidadCritica, type ChecklistSinFotos, } from '../types';
+import { kpisResumenSchema, unidadesCriticasSchema, sinFotografiasSchema, type KpisResumen, type ChecklistSinFotos, } from '../types';
 
 export async function getKpisResumen(): Promise<KpisResumen> {
     try {
