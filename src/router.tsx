@@ -18,6 +18,7 @@ import AsignacionDetalleView from './views/admin/asignacion/AsignacionDetalleVie
 import AsignacionGalleryView from './views/admin/asignacion/AsignacionGalleryView'
 import KpiDashboardView from './views/admin/kpis/KpiDashboardView'
 import CrearAsignacion from './views/admin/asignacion/CrearAsignacionView'
+import StorageView from './views/admin/storage/StorageView'
 
 
 export default function Router() {
@@ -40,6 +41,8 @@ export default function Router() {
                     <Route path='/users' element={<UsersView />}  />
                     <Route path='/users/register' element={<RegisterView />}  />
                     <Route path='/users/:userId/edit' element={<EditUserView />}  />
+
+                    <Route path='/admin/storage' element={<StorageView />} />
                 </Route>
 
                 <Route element={<AuthLayout />}>
