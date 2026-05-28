@@ -63,23 +63,23 @@ export default function ChecklistImageUploadView() {
     });
 
     const handleChange = (e: React.ChangeEvent<HTMLInputElement>, fieldId: string) => {
+        if (uploadingFields[fieldId]) return 
+        
         const file = e.target.files?.[0];
         if (!file) return;
 
         setUploadingFields(prev => ({ ...prev, [fieldId]: true }));
 
-        // Preparar el reader pero sin leerlo aún
         const reader = new FileReader();
 
         uploadMutation.mutate(
             { file, asignacionId: +asignacionId!, checklistId: +checklistId!, fieldId },
             {
                 onSuccess: (data) => {
-                    // Definir el handler ANTES de leer
                     reader.onloadend = () => {
                         setImageUrls(prev => ({ ...prev, [fieldId]: reader.result as string }));
                     };
-                    reader.readAsDataURL(file); // Leer aquí, cuando ya sabes que fue exitoso
+                    reader.readAsDataURL(file);
                     setUploadedFields(prev => ({ ...prev, [fieldId]: true }));
                     toast.success(data.message || `Imagen ${fieldId} subida`);
                 },
@@ -96,8 +96,10 @@ export default function ChecklistImageUploadView() {
     };
 
     const handleSaveSignature = (file: File) => {
+        if (uploadingFields["firma"] || uploadedFields["firma"]) return;
+
+        setUploadingFields(prev => ({ ...prev, firma: true }));
         const reader = new FileReader();
-        reader.readAsDataURL(file);
 
         uploadMutation.mutate(
             { file, asignacionId: +asignacionId!, checklistId: +checklistId!, fieldId: "firma" },
@@ -106,17 +108,24 @@ export default function ChecklistImageUploadView() {
                     reader.onloadend = () => {
                         setImageUrls(prev => ({ ...prev, firma: reader.result as string }));
                     };
+                    reader.readAsDataURL(file);
                     setUploadedFields(prev => ({ ...prev, firma: true }));
+                    toast.success("Firma guardada correctamente");
                 },
                 onError: (error: any) => {
                     setImageUrls(prev => ({ ...prev, firma: null }));
                     setUploadedFields(prev => ({ ...prev, firma: false }));
                     toast.error(error.message || "Error al subir la firma");
+                },
+                onSettled: () => {
+                    setUploadingFields(prev => ({ ...prev, firma: false }));
                 }
             }
         );
     };
 
+    // Bloqueo global: verdadero si se está subiendo alguna foto o firma
+    const isAnyUploading = Object.values(uploadingFields).some(Boolean);
     const canFinalize = requiredFields.every(f => uploadedFields[f.id]) && uploadedFields["firma"];
 
     if (isLoading) return <p className="text-center py-20 text-gray-500">Cargando datos...</p>;
@@ -137,9 +146,15 @@ export default function ChecklistImageUploadView() {
                             <input 
                                 type="file"
                                 accept=".jpeg,.jpg,.png"
-                                capture="environment" 
-                                onChange={e => handleChange(e, f.id)} 
-                                className="absolute inset-0 opacity-0 z-20 cursor-pointer" 
+                                capture="environment"
+                                disabled={isAnyUploading}
+                                onChange={e => handleChange(e, f.id)}
+                                className={`
+                                    absolute inset-0 opacity-0 z-20
+                                    ${isAnyUploading
+                                        ? 'pointer-events-none'
+                                        : 'cursor-pointer'}
+                                `}
                             />
                             {imageUrls[f.id] ? (
                                 <>
@@ -147,7 +162,6 @@ export default function ChecklistImageUploadView() {
                                     <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                                         <span className="text-white text-[10px] font-bold">CAMBIAR</span>
                                     </div>
-                                    {/* ← agrega el overlay aquí, dentro del bloque imageUrls */}
                                     {!uploadingFields[f.id] && (
                                         <div className="absolute bottom-0 left-0 right-0 bg-emerald-500/80 py-1 flex items-center justify-center gap-1 z-10">
                                             <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -172,14 +186,19 @@ export default function ChecklistImageUploadView() {
             <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-8 gap-3">
                 {optionalFields.map(f => (
                     <div key={f.id} className="relative h-20 bg-white border border-gray-200 rounded-lg flex items-center justify-center overflow-hidden shadow-sm">
-                        <input type="file" capture="environment" onChange={e => handleChange(e, f.id)} className="absolute inset-0 opacity-0 z-10 cursor-pointer" />
+                        <input 
+                            type="file" 
+                            capture="environment" 
+                            disabled={isAnyUploading}
+                            onChange={e => handleChange(e, f.id)} 
+                            className={`absolute inset-0 opacity-0 z-10 ${isAnyUploading ? 'pointer-events-none' : 'cursor-pointer'}`} 
+                        />
                        {imageUrls[f.id] ? (
                             <>
                                 <img src={imageUrls[f.id]!} className="object-cover w-full h-full" alt={f.label} />
                                 <div className="absolute inset-0 bg-black/40 flex items-center justify-center opacity-0 group-hover:opacity-100 transition-opacity">
                                     <span className="text-white text-[10px] font-bold">CAMBIAR</span>
                                 </div>
-                                {/* ← agrega el overlay aquí, dentro del bloque imageUrls */}
                                 {!uploadingFields[f.id] && (
                                     <div className="absolute bottom-0 left-0 right-0 bg-emerald-500/80 py-1 flex items-center justify-center gap-1 z-10">
                                         <svg className="w-3 h-3 text-white" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -207,32 +226,45 @@ export default function ChecklistImageUploadView() {
                         El operador debe firmar para confirmar el checklist
                     </p>
 
-                    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
-                        <SignaturePad onSave={handleSaveSignature} />
-                        {imageUrls["firma"] && (
-                            <div className="mt-5 p-3 bg-emerald-50 rounded-xl border border-emerald-100 text-center">
+                    <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5 relative">
+                        {!uploadedFields["firma"] ? (
+                            <>
+                                <SignaturePad onSave={handleSaveSignature} />
+                                {uploadingFields["firma"] && (
+                                    <div className="absolute inset-0 bg-white/90 flex items-center justify-center text-xs font-bold text-blue-600">
+                                        SUBIENDO FIRMA...
+                                    </div>
+                                )}
+                            </>
+                        ) : (
+                            <div className="p-3 bg-emerald-50 rounded-xl border border-emerald-100 text-center">
                                 <p className="text-[10px] text-emerald-600 font-bold uppercase mb-2">
                                     ✓ Firma capturada
                                 </p>
-                                <img
-                                    src={imageUrls["firma"]}
-                                    className="h-20 mx-auto object-contain"
-                                    alt="Firma"
-                                />
+                                {imageUrls["firma"] && (
+                                    <img
+                                        src={imageUrls["firma"]}
+                                        className="h-20 mx-auto object-contain"
+                                        alt="Firma"
+                                    />
+                                )}
                             </div>
                         )}
                     </div>
                 </div>
             </div>
+            
             {/* Botón Acción Final */}
             {canFinalize && (
                 <div className="mt-16 flex justify-center pb-10">
                     <button
                         onClick={() => finalizeMutation.mutate({ asignacionId: +asignacionId!, checklistId: +checklistId! })}
                         disabled={finalizeMutation.isPending}
-                        className="w-full md:w-96 bg-[#10B981] hover:bg-[#059669] text-white font-black py-5 rounded-2xl shadow-2xl transition-all transform hover:scale-105 active:scale-95 uppercase tracking-[0.2em] disabled:opacity-50"
+                        className=" w-full md:w-96 bg-[#0f1f3d] hover:bg-[#13284d] text-white font-semibold py-4 rounded-2xl shadow-sm transition-all active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed"
                     >
-                        {finalizeMutation.isPending ? 'Procesando...' : 'Finalizar y Cerrar Asignación'}
+                        {finalizeMutation.isPending
+                            ? 'Finalizando...'
+                            : 'Finalizar asignación'}
                     </button>
                 </div>
             )}
