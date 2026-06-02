@@ -61,7 +61,8 @@ export const unidadesSchemaBase = z.array(unidadSchemaBase)
 export const cajaSchemaBase = z.object({
     id: z.number(),
     c_placas: z.string(),
-    c_marca: z.string()
+    c_marca: z.string(),
+    numero_caja: z.string(),
 })
 
 export const cajasSchemaBase = z.array(cajaSchemaBase)
@@ -100,8 +101,9 @@ export type AsignacionCompleta = z.infer<typeof asignacionCompletaSchema>
 // ── Status de asignación ──────────────────────────────────────────────────────
 export const asignacionStatusSchema = z.enum([
     'CREADA',
-    'CHECKLIST_PENDIENTE',  // ← agregado
+    'CHECKLIST_PENDIENTE',
     'FOTOS_PENDIENTES',
+    'EN_RUTA',
     'COMPLETA'
 ])
 export type AsignacionStatus = z.infer<typeof asignacionStatusSchema>
@@ -463,3 +465,26 @@ export const checklistsStorageResponseSchema = z.object({
 
 export type ChecklistStorage = z.infer<typeof checklistStorageSchema>;
 export type ChecklistsStorageResponse = z.infer<typeof checklistsStorageResponseSchema>;
+
+/* ========= Asignaciones en ruta ========= */
+
+export const asignacionEnRutaItemSchema = z.object({
+    id:         z.number(),
+    createdAt:  z.string(),
+    updatedAt:  z.string(),
+    status:     asignacionStatusSchema,
+    unidad:     unidadSchemaBase,
+    operador:   operadorSchemaBase.nullable(),
+    checklist:  z.object({
+        id:      z.number(),
+        status:  z.enum(['EN_PROGRESO', 'COMPLETO']),
+        imagenes: z.array(imagenEnChecklistSchema)
+    }).nullable()
+})
+
+export const asignacionesEnRutaSchema = z.object({
+    asignaciones: z.array(asignacionEnRutaItemSchema)
+})
+
+export type AsignacionEnRutaItem = z.infer<typeof asignacionEnRutaItemSchema>
+export type AsignacionesEnRuta   = z.infer<typeof asignacionesEnRutaSchema>

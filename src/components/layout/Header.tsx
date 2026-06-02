@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
-import { Bars3Icon, XMarkIcon, ArrowRightOnRectangleIcon, ClipboardDocumentListIcon, CalendarIcon, UsersIcon, NewspaperIcon, CircleStackIcon } from '@heroicons/react/24/outline'
+import { Bars3Icon, XMarkIcon, ArrowRightOnRectangleIcon, ClipboardDocumentListIcon, CalendarIcon, UsersIcon, NewspaperIcon, CircleStackIcon, ShieldCheckIcon } from '@heroicons/react/24/outline'
 import { User } from '../../types'
 import { Rol } from '../../types/roles'
 
@@ -35,9 +35,16 @@ export default function Header({ user }: { user: User }) {
 
             {/* Nav desktop */}
             <nav className="hidden md:flex items-center gap-1">
-                <NavLink to="/?page=1" active={isActive('/')} label="Asignaciones" Icon={ClipboardDocumentListIcon} />
-                <NavLink to="/dashboard" active={isActive('/dshboard')} label="Dashboard KPIs" Icon={NewspaperIcon} />
-                <NavLink to="/asignaciones-date" active={isActive('/asignaciones-date')} label="Calendario" Icon={CalendarIcon} />
+                {user.rol !== Rol.VIGILANTE && (
+                    <>
+                        <NavLink to="/?page=1" active={isActive('/')} label="Asignaciones" Icon={ClipboardDocumentListIcon} />
+                        <NavLink to="/dashboard" active={isActive('/dashboard')} label="Dashboard KPIs" Icon={NewspaperIcon} />
+                        <NavLink to="/asignaciones-date" active={isActive('/asignaciones-date')} label="Calendario" Icon={CalendarIcon} />
+                    </>
+                )}
+                {(user.rol === Rol.VIGILANTE || user.rol === Rol.SISTEMAS) && (
+                    <NavLink to="/vigilancia" active={location.pathname.startsWith('/vigilancia')} label="Vigilancia" Icon={ShieldCheckIcon} />
+                )}
                 {user.rol === Rol.SISTEMAS && (
                     <>
                         <NavLink to="/users" active={isActive('/users')} label="Usuarios" Icon={UsersIcon} />
@@ -88,9 +95,16 @@ export default function Header({ user }: { user: User }) {
 
                     <div className="h-px bg-white/10 my-1.5" />
 
-                    <MobileLink to="/?page=1" label="Asignaciones" Icon={ClipboardDocumentListIcon} onClick={() => setMenuOpen(false)} />
-                    <MobileLink to="/dashboard" label="Dashboard KPIs" Icon={NewspaperIcon} onClick={() => setMenuOpen(false)} />
-                    <MobileLink to="/asignaciones-date" label="Calendario" Icon={CalendarIcon} onClick={() => setMenuOpen(false)} />
+                   {user.rol !== Rol.VIGILANTE && (
+                        <>
+                            <MobileLink to="/?page=1" label="Asignaciones" Icon={ClipboardDocumentListIcon} onClick={() => setMenuOpen(false)} />
+                            <MobileLink to="/dashboard" label="Dashboard KPIs" Icon={NewspaperIcon} onClick={() => setMenuOpen(false)} />
+                            <MobileLink to="/asignaciones-date" label="Calendario" Icon={CalendarIcon} onClick={() => setMenuOpen(false)} />
+                        </>
+                    )}
+                    {(user.rol === Rol.VIGILANTE || user.rol === Rol.SISTEMAS) && (
+                        <MobileLink to="/vigilancia" label="Vigilancia" Icon={ShieldCheckIcon} onClick={() => setMenuOpen(false)} />
+                    )}
                     {user.rol === Rol.SISTEMAS && (
                         <>
                             <MobileLink to="/users" label="Usuarios" Icon={UsersIcon} onClick={() => setMenuOpen(false)} />

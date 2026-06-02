@@ -19,6 +19,10 @@ import AsignacionGalleryView from './views/admin/asignacion/AsignacionGalleryVie
 import KpiDashboardView from './views/admin/kpis/KpiDashboardView'
 import CrearAsignacion from './views/admin/asignacion/CrearAsignacionView'
 import StorageView from './views/admin/storage/StorageView'
+import VigilanciaListView from './views/admin/vigilancia/VigilanciaListView'
+import VigilanciaEntradaView from './views/admin/vigilancia/VigilanciaEntradaView'
+import VigilanteSoloRoute from './guards/VigilanteSoloRoute'
+import VigilanciaRoute from './guards/VigilanciaRoute'
 
 
 export default function Router() {
@@ -26,23 +30,27 @@ export default function Router() {
         <BrowserRouter>
             <Routes>
                 <Route element={<AppLayout />}>
-                    <Route path='/' element={<DashboardView />} index />
-                    <Route path='/asignacion/create' element={<CrearAsignacion />}  />
-                    <Route path='/asignacion/:asignacionId/edit' element={<EditarAsignacionView />}  />
-                    <Route path='/asignacion/:asignacionId' element={<AsignacionDetalleView />}  />
-                    <Route path='/asignacion/:asignacionId/createChecklist' element={<ChecklistCreateView />}  />
-                    <Route path='/asignacion/:asignacionId/editChecklist/:checklistId' element={<ChecklistLlenarView />} />
-                    <Route path='/asignacion/:asignacionId/createChecklist/:checklistId/uploadImages' element={<ChecklistImageUploadView />}  />
-                    <Route path='/asignacion/:asignacionId/ver-fotos' element={<AsignacionGalleryView />} />
-
-                    <Route path="/dashboard" element={<KpiDashboardView />} />
-
-                    <Route path='/asignaciones-date' element={<CalendarView />}  />
-                    <Route path='/users' element={<UsersView />}  />
-                    <Route path='/users/register' element={<RegisterView />}  />
-                    <Route path='/users/:userId/edit' element={<EditUserView />}  />
-
-                    <Route path='/admin/storage' element={<StorageView />} />
+                    <Route element={<VigilanteSoloRoute />}>
+                        <Route path='/' element={<DashboardView />} index />
+                        <Route path='/asignacion/create' element={<CrearAsignacion />} />
+                        <Route path='/asignacion/:asignacionId/edit' element={<EditarAsignacionView />} />
+                        <Route path='/asignacion/:asignacionId' element={<AsignacionDetalleView />} />
+                        <Route path='/asignacion/:asignacionId/createChecklist' element={<ChecklistCreateView />} />
+                        <Route path='/asignacion/:asignacionId/editChecklist/:checklistId' element={<ChecklistLlenarView />} />
+                        <Route path='/asignacion/:asignacionId/createChecklist/:checklistId/uploadImages' element={<ChecklistImageUploadView />} />
+                        <Route path='/asignacion/:asignacionId/ver-fotos' element={<AsignacionGalleryView />} />
+                        <Route path="/dashboard" element={<KpiDashboardView />} />
+                        <Route path='/asignaciones-date' element={<CalendarView />} />
+                        <Route path='/users' element={<UsersView />} />
+                        <Route path='/users/register' element={<RegisterView />} />
+                        <Route path='/users/:userId/edit' element={<EditUserView />} />
+                        <Route path='/admin/storage' element={<StorageView />} />
+                    </Route>
+                   
+                   <Route element={<VigilanciaRoute />}>
+                        <Route path='/vigilancia' element={<VigilanciaListView />} />
+                        <Route path='/vigilancia/:asignacionId' element={<VigilanciaEntradaView />} />
+                    </Route>
                 </Route>
 
                 <Route element={<AuthLayout />}>

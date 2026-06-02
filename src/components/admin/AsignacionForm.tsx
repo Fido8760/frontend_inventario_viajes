@@ -66,7 +66,7 @@ export default function AsignacionForm({ errors, register, unidades, cajas, oper
                     <option value="">-- Seleccione un remolque --</option>
                     {cajas.map(caja => (
                         <option key={caja.id} value={caja.id}>
-                            {caja.c_placas} · {caja.c_marca}
+                            {caja.numero_caja} · {caja.c_placas} · {caja.c_marca}
                         </option>
                     ))}
                 </select>

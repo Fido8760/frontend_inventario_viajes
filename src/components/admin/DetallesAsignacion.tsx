@@ -44,6 +44,7 @@ const statusConfig: Record<string, { label: string; dot: string; badge: string }
     CREADA:              { label: 'Sin checklist',       dot: 'bg-gray-400',    badge: 'bg-gray-100 text-gray-600' },
     CHECKLIST_PENDIENTE: { label: 'Checklist pendiente', dot: 'bg-blue-400',    badge: 'bg-blue-50 text-blue-700' },
     FOTOS_PENDIENTES:    { label: 'Fotos pendientes',    dot: 'bg-amber-400',   badge: 'bg-amber-50 text-amber-700' },
+    EN_RUTA:             { label: 'En ruta',             dot: 'bg-purple-400',  badge: 'bg-purple-50 text-purple-700' }, // ← agregar
     COMPLETA:            { label: 'Completa',            dot: 'bg-emerald-400', badge: 'bg-emerald-50 text-emerald-700' },
 };
 export default function DetallesAsignacion({ data, asignacionId, onDeleteChecklist, isDeletingChecklist }: DetallesAsignacionProps) {
@@ -144,6 +145,16 @@ export default function DetallesAsignacion({ data, asignacionId, onDeleteCheckli
                                 {checklist.status === 'EN_PROGRESO' ? 'Continuar checklist' : 'Editar checklist'}
                             </Link>
                         )}
+
+                        {status === 'EN_RUTA' && (
+                            <div className="flex items-center gap-2 text-sm text-purple-700 bg-purple-50 border border-purple-200 rounded-lg px-3 py-2">
+                                <svg className="w-4 h-4 shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                                </svg>
+                                Unidad en ruta — vigilancia registrará la entrada
+                            </div>
+                        )}
+                        
                         {status === 'FOTOS_PENDIENTES' && (
                             <Link
                                 to={`/asignacion/${asignacionId}/createChecklist/${checklist.id}/uploadImages`}
