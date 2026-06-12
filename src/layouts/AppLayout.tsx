@@ -18,7 +18,7 @@ export default function AppLayout() {
     if (data) return (
         <div className="flex flex-col min-h-screen bg-gray-100">
             <Header user={data} />
-            <main className="flex-1 max-w-screen-xl w-full mx-auto p-6">
+            <main className="flex-1 max-w-screen-xl w-full mx-auto p-6 overflow-x-hidden">
                 <Outlet />
             </main>
             <Footer />

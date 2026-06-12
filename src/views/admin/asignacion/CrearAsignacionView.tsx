@@ -8,12 +8,14 @@ import { AsignacionFormData } from "../../../types"
 import { crearAsignacion, getCajas, getOperadores, getUnidades } from "../../../api/AsignacionAPI"
 
 export default function CrearAsignacion() {
-    const navigate = useNavigate()
+    const navigate = useNavigate();
+    const [cajaExterna, setCajaExterna] = useState(false);
 
     const initialValues: AsignacionFormData = {
         unidadId: 0,
         cajaId: 0,
-        operadorId: 0
+        operadorId: 0,
+        caja_externa: false
     }
 
     const { data: unidades } = useQuery({ queryKey: ['unidades'],   queryFn: getUnidades })
@@ -31,7 +33,9 @@ export default function CrearAsignacion() {
         const unidad = unidades?.find(u => u.id === +unidadIdSeleccionada)
         if (unidad?.tipo_unidad === "MUDANCERO" || unidad?.tipo_unidad === "CAMIONETA") {
             setCajaDisabled(true)
+            setCajaExterna(false)
             setValue("cajaId", 0)
+            setValue("caja_externa", false)
         } else {
             setCajaDisabled(false)
         }
@@ -47,6 +51,12 @@ export default function CrearAsignacion() {
             }
         }
     })
+
+    const handleCajaExterna = (checked: boolean) => {
+        setCajaExterna(checked)
+        setValue("caja_externa", checked)
+        if(checked) setValue("cajaId", null)
+    }
 
     const handleForm = (formData: AsignacionFormData) => mutate(formData)
 
@@ -91,6 +101,8 @@ export default function CrearAsignacion() {
                         cajas={cajas || []}
                         operadores={operadores || []}
                         cajaDisabled={cajaDisabled}
+                        cajaExterna={cajaExterna}
+                        onCajaExterna={handleCajaExterna}
                     />
 
                     <button

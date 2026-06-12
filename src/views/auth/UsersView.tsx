@@ -3,7 +3,6 @@ import { Link, Navigate } from "react-router-dom";
 import { getUsers } from "../../api/AuthAPI";
 import UsersTable from "../../components/auth/UsersTable";
 
-
 export default function UsersView() {
 
     const { data, isLoading, isError } = useQuery({
@@ -17,30 +16,43 @@ export default function UsersView() {
                 <span className="text-xl text-gray-600 animate-pulse">Cargando usuarios...</span>
             </div>
         )
-      }
-    if (isError) return <Navigate to={"/404"} />
-    if (data) return (
-        <>
-           <h1 className=" text-3xl font-bold">Usuarios Registrados</h1>
-            <p className=" text-xl font-light text-gray-500 mt-5">
-                Gestiona los usuarios de la aplicación
-            </p>
-            <nav className=" my-5">
-                <Link
-                    className=" bg-blue-800 hover:bg-blue-900 rounded-md px-10 py-3 text-white text-xl font-bold cursor-pointer transition-colors"
-                    to={"/users/register"}
-                >
-                    Agregar Usuario
-                </Link>
-            </nav>
-            {data.length === 0 ? (
-                <p>No hay usuarios registrados todavía</p>
-            ) : (
+    }
 
-                <UsersTable 
-                    data={data}
-                />
+    if (isError) {
+        return (
+            <div className="flex items-center justify-center py-32">
+                <p className=" text-gray-400 text-sm">Cargando usuarios...</p>
+            </div>
+        );
+    }
+
+    if(isError) return <Navigate to={"/404"} />
+
+    if(!data) return null;
+
+    return (
+        <div>
+            <div className="flex flex-wrap items-center justify-between gap-4 mb-6">
+                <div>
+                    <h1 className=" text-2xl font-medium text-gray-900">Usuarios</h1>
+                    <p className="text-sm text-gray-500 mt-0.5">Administración de usuarios y permisos</p>
+                </div>
+
+                <Link 
+                    to={"/users/register"}
+                    className="flex items-center gap-2 bg-[#0f1f3d] text-white text-sm font-medium px-4 py-2 rounded-lg hover:bg-[#1a3a6b] transition-colors no-underline"
+                >
+                    Nuevo usuario
+                </Link>
+            </div>
+
+            {data.length === 0 ? (
+                <div className=" flex flex-col items-center py-32 text-gray-400">
+                    <p className=" text-sm">No hay usuarios registrados</p>
+                </div>
+            ) : (
+                <UsersTable data={data} />
             )}
-        </>
+        </div>
     )
 }

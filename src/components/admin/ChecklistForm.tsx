@@ -1,21 +1,16 @@
 import { useEffect, useState } from "react";
-import { RespuestaItem } from "../../api/ChecklistAPI";
-import { PreguntaConRespuesta } from "../../types";
+import { RespuestaFlow, SeccionFlow } from "../../hooks/useChecklistFlow";
 
-type Seccion = {
-    nombre: string;
-    preguntas: PreguntaConRespuesta[];
-};
- 
+
 type ChecklistFormProps = {
-    seccion: Seccion;
+    seccion: SeccionFlow;
     seccionActual: number;
     totalSecciones: number;
     isGuardando: boolean;
     estaCompleto: boolean;
     onAnterior: () => void;
-    onSiguiente: (respuestas: RespuestaItem[]) => void;
-    onFinalizar: (respuestas: RespuestaItem[]) => void;
+    onSiguiente: (respuestas: RespuestaFlow[]) => void; 
+    onFinalizar: (respuestas: RespuestaFlow[]) => void; 
 };
 
 export default function ChecklistForm({ seccion, seccionActual, totalSecciones, isGuardando, estaCompleto, onAnterior, onSiguiente, onFinalizar}: ChecklistFormProps) {
@@ -66,7 +61,7 @@ export default function ChecklistForm({ seccion, seccionActual, totalSecciones, 
     return Object.keys(nuevosErrores).length === 0;
   };
  
-    const getRespuestas = (): RespuestaItem[] =>
+    const getRespuestas = (): RespuestaFlow[] =>
         seccion.preguntas.map(p => ({
             preguntaId: p.preguntaId,
             valor: valores[p.preguntaId] ?? '',

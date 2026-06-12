@@ -1,6 +1,16 @@
 import { isAxiosError } from 'axios'
 import api from '../lib/axios' // ajusta el path a tu instancia de axios
-import { kpisResumenSchema, unidadesCriticasSchema, sinFotografiasSchema, type KpisResumen, type ChecklistSinFotos, } from '../types';
+import {
+    asignacionesEnRutaSchema,
+    inspeccionKpisSchema,
+    kpisResumenSchema,
+    sinFotografiasSchema,
+    unidadesCriticasSchema,
+    type AsignacionesEnRuta,
+    type ChecklistSinFotos,
+    type InspeccionKpis,
+    type KpisResumen,
+} from '../types';
 
 export async function getKpisResumen(): Promise<KpisResumen> {
     try {
@@ -52,5 +62,39 @@ export async function getSinFotografias(): Promise<ChecklistSinFotos[]> {
             throw new Error(error.response.data.error)
         }
         throw new Error('Error al obtener checklists sin fotografías')
+    }
+}
+
+export async function getKpisInspecciones(): Promise<InspeccionKpis> {
+    try {
+        const { data } = await api.get('/dashboard/kpis/inspecciones')
+        const result = inspeccionKpisSchema.safeParse(data)
+        if (!result.success) {
+            console.error('Zod error getKpisInspecciones:', result.error)
+            throw new Error('Respuesta del servidor inválida')
+        }
+        return result.data
+    } catch (error) {
+        if (isAxiosError(error) && error.response) {
+            throw new Error(error.response.data.error)
+        }
+        throw new Error('Error al obtener KPIs de inspecciones')
+    }
+}
+
+export async function getAsignacionesEnRuta(): Promise<AsignacionesEnRuta> {
+    try {
+        const { data } = await api.get('/dashboard/kpis/en-ruta')
+        const result = asignacionesEnRutaSchema.safeParse(data)
+        if (!result.success) {
+            console.error('Zod error getAsignacionesEnRuta:', result.error)
+            throw new Error('Respuesta del servidor inválida')
+        }
+        return result.data
+    } catch (error) {
+        if (isAxiosError(error) && error.response) {
+            throw new Error(error.response.data.error)
+        }
+        throw new Error('Error al obtener asignaciones en ruta')
     }
 }

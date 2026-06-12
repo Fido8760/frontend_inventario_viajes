@@ -1,6 +1,6 @@
 import { isAxiosError } from "axios";
 import api from "../lib/axios";
-import { asignacionByIdApiResponseSchema, AsignacionCompleta, AsignacionFormData, asignacionPaginationApiSchema, cajasSchemaBase, operadoresSchemaBase, unidadesSchemaBase } from "../types";
+import { asignacionByIdApiResponseSchema, AsignacionCompleta, AsignacionFormData, asignacionPaginationApiSchema, cajasSchemaBase, operadoresSchemaBase, SearchByDateResponse, searchByDateSchema, unidadesSchemaBase } from "../types";
 import { ZodError } from "zod";
 
 //Obtener todas la unidades
@@ -26,8 +26,10 @@ export async function getUnidades() {
 export async function getCajas() {
     try {
         const { data } = await api('/assignments/cajas');
-        const response = cajasSchemaBase.parse(data);
-        return response
+        const response = cajasSchemaBase.safeParse(data);
+        if(response.success) {
+            return response.data
+        }
     } catch (error) {
         if (isAxiosError(error) && error.response) {
             throw new Error(error.response.data.error);
@@ -96,6 +98,21 @@ export async function getAsignacionesDate(date: string) {
         if(isAxiosError(error) && error.response) {
             throw new Error(error.response.data.error)
         }
+    }
+}
+
+export async function getResultadosPorFecha(date: string): Promise<SearchByDateResponse> {
+    try {
+        const { data } = await api(`/search/by-date?date=${date}`)
+        const response = searchByDateSchema.safeParse(data)
+        if (response.success) return response.data
+        console.error('Zod error en getResultadosPorFecha:', response.error.errors)
+        throw new Error('Error de validación en búsqueda por fecha')
+    } catch (error) {
+        if (isAxiosError(error) && error.response) {
+            throw new Error(error.response.data.error)
+        }
+        throw error
     }
 }
 

@@ -165,6 +165,7 @@ export const asignacionFormSchema = z.object({
     unidadId:   z.coerce.number().int().gt(0, "Seleccione unidad"),
     cajaId:     z.coerce.number().int().optional().nullable(),
     operadorId: z.coerce.number().int().gt(0, "Seleccione operador"),
+    caja_externa: z.boolean().optional().default(false),
 })
 export type AsignacionFormData = z.infer<typeof asignacionFormSchema>
 
@@ -398,7 +399,9 @@ export const kpisResumenSchema = z.object({
     totalUnidades:      z.number(),
     sinChecklist:       z.number(),
     mas30dias:          z.number(),
+    revisionPendiente:  z.number(),
     enProgreso:         z.number(),
+    enRuta:             z.number(),
     completos:          z.number(),
     sinFotos:           z.number(),
     completitudPorTipo: z.array(completitudPorTipoSchema),
@@ -412,7 +415,9 @@ export const unidadCriticaSchema = z.object({
     u_placas:        z.string(),
     motivo:          z.enum(['sin_checklist', 'mas_30_dias']),
     diasSinRevision: z.number().nullable(),
-    ultimoChecklist: z.string().nullable(), 
+    ultimoChecklist: z.string().nullable(),
+    origenUltimaRevision: z.enum(['asignacion', 'inspeccion']).nullable().optional(),
+    estadoUltimaRevision: z.string().nullable().optional(),
 })
 
 export const unidadesCriticasSchema = z.object({
@@ -475,16 +480,205 @@ export const asignacionEnRutaItemSchema = z.object({
     status:     asignacionStatusSchema,
     unidad:     unidadSchemaBase,
     operador:   operadorSchemaBase.nullable(),
+    caja:       cajaSchemaBase.nullable().optional(),
     checklist:  z.object({
         id:      z.number(),
         status:  z.enum(['EN_PROGRESO', 'COMPLETO']),
         imagenes: z.array(imagenEnChecklistSchema)
-    }).nullable()
+    }).nullable().optional()
 })
 
 export const asignacionesEnRutaSchema = z.object({
+    total: z.number(),
     asignaciones: z.array(asignacionEnRutaItemSchema)
 })
 
 export type AsignacionEnRutaItem = z.infer<typeof asignacionEnRutaItemSchema>
 export type AsignacionesEnRuta   = z.infer<typeof asignacionesEnRutaSchema>
+
+/* ========= INSPECCIONES DE PATIO ========= */
+
+// ── Enums ─────────────────────────────────────────────────────────────────────
+export const inspeccionStatusSchema = z.enum([
+    'EN_PROGRESO',
+    'FOTOS_PENDIENTES',
+    'COMPLETA'
+])
+export type InspeccionStatus = z.infer<typeof inspeccionStatusSchema>
+
+export const tipoInspeccionSchema = z.enum(['UNIDAD', 'REMOLQUE'])
+export type TipoInspeccion = z.infer<typeof tipoInspeccionSchema>
+
+// ── Lista paginada (GET /inspecciones) ────────────────────────────────────────
+const inspeccionListItemSchema = z.object({
+    id:        z.number(),
+    tipo:      tipoInspeccionSchema,
+    status:    inspeccionStatusSchema,
+    userId:    z.number(),
+    unidadId:  z.number().nullable(),
+    cajaId:    z.number().nullable(),
+    createdAt: z.string().datetime(),
+    updatedAt: z.string().datetime(),
+    unidad: z.object({
+        id:          z.number(),
+        no_unidad:   z.string(),
+        tipo_unidad: z.string(),
+        u_placas:    z.string(),
+    }).nullable(),
+    caja: z.object({
+        id:          z.number(),
+        numero_caja: z.string(),
+        c_placas:    z.string(),
+        c_marca:     z.string(),
+    }).nullable(),
+    usuario: z.object({
+        id:       z.number(),
+        name:     z.string(),
+        lastname: z.string(),
+    }).nullable(),
+    imagenes: z.array(z.object({
+        id:      z.number(),
+        fieldId: z.string(),
+    }))
+})
+
+export const inspeccionPaginationSchema = z.object({
+    count: z.number(),
+    rows:  z.array(inspeccionListItemSchema)
+})
+export type InspeccionListItem       = z.infer<typeof inspeccionListItemSchema>
+export type InspeccionPaginationType = z.infer<typeof inspeccionPaginationSchema>
+
+// ── Detalle (GET /inspecciones/:id) ──────────────────────────────────────────
+const imagenInspeccionSchema = z.object({
+    id:           z.number(),
+    inspeccionId: z.number(),
+    urlImagen:    z.string().url(),
+    publicId:     z.string().nullable(),
+    fieldId:      z.string(),
+})
+
+const respuestaInspeccionSchema = z.object({
+    id:           z.number(),
+    inspeccionId: z.number(),
+    preguntaId:   z.number(),
+    valor:        z.string().nullable(),
+    pregunta: z.object({
+        id:          z.number(),
+        seccion:     z.string(),
+        texto:       z.string(),
+        tipo:        z.enum(['numero', 'si_no', 'opciones', 'texto']),
+        aplica_a:    z.enum(['todos', 'tractocamion']),
+        obligatorio: z.boolean(),
+        orden:       z.number(),
+    }).optional()
+})
+
+export const inspeccionByIdSchema = z.object({
+    id:        z.number(),
+    tipo:      tipoInspeccionSchema,
+    status:    inspeccionStatusSchema,
+    userId:    z.number(),
+    unidadId:  z.number().nullable(),
+    cajaId:    z.number().nullable(),
+    createdAt: z.string().datetime(),
+    updatedAt: z.string().datetime(),
+    unidad: z.object({
+        id:          z.number(),
+        no_unidad:   z.string(),
+        tipo_unidad: z.string(),
+        u_placas:    z.string(),
+    }).nullable(),
+    caja: z.object({
+        id:          z.number(),
+        numero_caja: z.string(),
+        c_placas:    z.string(),
+        c_marca:     z.string(),
+        c_anio:      z.number(),
+    }).nullable(),
+    usuario: z.object({
+        id:       z.number(),
+        name:     z.string(),
+        lastname: z.string(),
+        rol:      z.nativeEnum(Rol),
+    }).nullable(),
+    imagenes:   z.array(imagenInspeccionSchema),
+    respuestas: z.array(respuestaInspeccionSchema),
+})
+export type InspeccionById      = z.infer<typeof inspeccionByIdSchema>
+export type ImagenInspeccion    = z.infer<typeof imagenInspeccionSchema>
+export type RespuestaInspeccion = z.infer<typeof respuestaInspeccionSchema>
+
+// ── Template (GET /inspecciones/:id/template) ─────────────────────────────────
+const preguntaTemplateSchema = z.object({
+    id:          z.number(),
+    seccion:     z.string(),
+    texto:       z.string(),
+    tipo:        z.enum(['si_no', 'opciones', 'numero', 'texto']),
+    obligatorio: z.boolean(),
+    aplica_a:    z.enum(['todos', 'tractocamion']),
+    orden:       z.number(),
+})
+
+export const templateInspeccionSchema = z.object({
+    secciones: z.record(z.array(preguntaTemplateSchema))
+})
+export type TemplateInspeccion  = z.infer<typeof templateInspeccionSchema>
+export type PreguntaTemplate    = z.infer<typeof preguntaTemplateSchema>
+
+// ── Formulario crear inspección ───────────────────────────────────────────────
+export const inspeccionFormSchema = z.object({
+    tipo:     tipoInspeccionSchema,
+    unidadId: z.coerce.number().int().nullable().optional(),
+    cajaId:   z.coerce.number().int().nullable().optional(),
+}).refine(data => {
+    if (data.tipo === 'UNIDAD') return !!data.unidadId && data.unidadId > 0
+    if (data.tipo === 'REMOLQUE') return !!data.cajaId && data.cajaId > 0
+    return true
+}, {
+    message: 'Debes seleccionar una unidad o caja según el tipo de inspección'
+})
+export type InspeccionFormData = z.infer<typeof inspeccionFormSchema>
+
+// ── KPIs (GET /inspecciones/kpis) ─────────────────────────────────────────────
+
+const cajasKpiSchema = z.object({
+    total:         z.number(),
+    conInspeccion: z.number(),
+    sinInspeccion: z.number(),
+    porcentaje:    z.number(),
+})
+
+const inspeccionPorTipoSchema = z.object({
+    tipo:      tipoInspeccionSchema,
+    total:     z.number(),
+    completas: z.number(),
+})
+
+export const inspeccionKpisSchema = z.object({
+    total:           z.number(),
+    enProgreso:      z.number(),
+    fotosPendientes: z.number(),
+    completas:       z.number(),
+    porTipo:         z.array(inspeccionPorTipoSchema),
+    cajas:           cajasKpiSchema.optional(), // ← agregar
+})
+
+export type CajasKpi = z.infer<typeof cajasKpiSchema>
+export type InspeccionKpis      = z.infer<typeof inspeccionKpisSchema>
+export type InspeccionPorTipo   = z.infer<typeof inspeccionPorTipoSchema>
+
+/* ======= Búsqueda por fecha ======= */
+
+export const searchByDateSchema = z.object({
+    asignaciones: z.object({
+        count: z.number(),
+        rows: z.array(apiPaginatedAsignacionItemSchema)
+    }),
+    inspecciones: z.object({
+        count: z.number(),
+        rows: z.array(inspeccionListItemSchema)
+    })
+})
+
+export type SearchByDateResponse = z.infer<typeof searchByDateSchema>

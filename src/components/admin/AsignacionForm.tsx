@@ -9,9 +9,11 @@ type AsignacionFormProps = {
     cajas: CajasBase
     operadores: OperadoresBase
     cajaDisabled: boolean
+    cajaExterna: boolean
+    onCajaExterna: (checked: boolean) => void
 }
 
-export default function AsignacionForm({ errors, register, unidades, cajas, operadores, cajaDisabled }: AsignacionFormProps) {
+export default function AsignacionForm({ errors, register, unidades, cajas, operadores, cajaDisabled, cajaExterna, onCajaExterna }: AsignacionFormProps) {
     return (
         <div className="space-y-5">
 
@@ -41,36 +43,60 @@ export default function AsignacionForm({ errors, register, unidades, cajas, oper
 
             {/* Remolque */}
             <div>
-                <label htmlFor="cajaId" className={`block text-sm font-medium mb-1.5 ${cajaDisabled ? 'text-gray-400' : 'text-gray-700'}`}>
-                    Remolque
-                    {cajaDisabled && <span className="ml-2 text-xs text-gray-400">(No aplica para este tipo de unidad)</span>}
-                    {!cajaDisabled && <span className="text-red-500 ml-1">*</span>}
-                </label>
+                <div className="flex items-center justify-between mb-1.5">
+                    <label htmlFor="cajaId" className={`block text-sm font-medium ${cajaDisabled ? 'text-gray-400' : 'text-gray-700'}`}>
+                        Remolque
+                        {cajaDisabled && <span className="ml-2 text-xs text-gray-400">(No aplica para este tipo de unidad)</span>}
+                        {!cajaDisabled && !cajaExterna && <span className="text-red-500 ml-1">*</span>}
+                    </label>
+
+                    {/* Checkbox caja externa — solo visible para tractocamión */}
+                    {!cajaDisabled && (
+                        <label className="flex items-center gap-1.5 text-xs text-gray-500 cursor-pointer select-none">
+                            <input
+                                type="checkbox"
+                                checked={cajaExterna}
+                                onChange={e => onCajaExterna(e.target.checked)}
+                                className="w-3.5 h-3.5 accent-[#0f1f3d]"
+                            />
+                            Recoge en patio externo
+                        </label>
+                    )}
+                </div>
+
                 <select
                     id="cajaId"
-                    disabled={cajaDisabled}
+                    disabled={cajaDisabled || cajaExterna}
                     {...register("cajaId", {
                         validate: (value) => {
-                            if (!cajaDisabled && !value) return "Seleccione un remolque"
+                            if (!cajaDisabled && !cajaExterna && !value) return "Seleccione un remolque"
                             return true
                         }
                     })}
                     className={`w-full px-3 py-2 text-sm border rounded-lg outline-none transition-colors bg-white ${
-                        cajaDisabled
+                        cajaDisabled || cajaExterna
                             ? 'border-gray-100 bg-gray-50 text-gray-400 cursor-not-allowed'
                             : errors.cajaId
                                 ? 'border-red-300 focus:border-red-400'
                                 : 'border-gray-200 focus:border-[#0f1f3d]'
                     }`}
                 >
-                    <option value="">-- Seleccione un remolque --</option>
-                    {cajas.map(caja => (
+                    <option value="">
+                        {cajaExterna ? 'Recoge remolque en patio externo' : '-- Seleccione un remolque --'}
+                    </option>
+                    {!cajaExterna && cajas.map(caja => caja && (
                         <option key={caja.id} value={caja.id}>
                             {caja.numero_caja} · {caja.c_placas} · {caja.c_marca}
                         </option>
                     ))}
                 </select>
                 {errors.cajaId && <ErrorMessage>{errors.cajaId.message}</ErrorMessage>}
+
+                {cajaExterna && (
+                    <p className="text-xs text-amber-600 mt-1.5">
+                        El remolque se asignará cuando la unidad regrese al patio
+                    </p>
+                )}
             </div>
 
             {/* Operador */}

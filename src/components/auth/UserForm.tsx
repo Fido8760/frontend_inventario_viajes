@@ -3,120 +3,142 @@ import ErrorMessage from "../ui/ErrorMessage";
 import { UserRegistrationForm } from "../../types";
 
 type UserFormProps = {
-    register: UseFormRegister<UserRegistrationForm>
-    errors: FieldErrors<UserRegistrationForm>
-    password: string
-}
+    register: UseFormRegister<UserRegistrationForm>;
+    errors: FieldErrors<UserRegistrationForm>;
+    password: string;
+};
 
-export default function UserForm({register, errors, password}: UserFormProps) {
+export default function UserForm({ register, errors, password, }: UserFormProps) {
     return (
-        <>
-            <div className="flex flex-col gap-5">
+        <div className="space-y-5">
+
+            <div>
                 <label
-                    className="font-normal text-2xl"
                     htmlFor="email"
-                >Email</label>
+                    className="block text-sm font-medium text-gray-700 mb-1.5"
+                >
+                    Correo electrónico
+                </label>
+
                 <input
                     id="email"
                     type="email"
-                    placeholder="Email de Registro"
-                    className="w-full p-3  border-gray-300 border"
+                    placeholder="correo@empresa.com"
+                    className=" w-full px-3 py-2.5 text-sm border border-gray-200 rounded-lg text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#0f1f3d]/20 focus:border-[#0f1f3d]"
                     {...register("email", {
-                    required: "El Email de registro es obligatorio",
-                    pattern: {
-                        value: /\S+@\S+\.\S+/,
-                        message: "E-mail no válido",
-                    },
+                        required: "El Email de registro es obligatorio",
+                        pattern: {
+                            value: /\S+@\S+\.\S+/,
+                            message: "E-mail no válido",
+                        },
                     })}
                 />
+
                 {errors.email && (
                     <ErrorMessage>{errors.email.message}</ErrorMessage>
                 )}
             </div>
 
-            <div className="flex flex-col gap-5">
+            <div>
                 <label
-                    className="font-normal text-2xl"
                     htmlFor="name"
-                >Nombre</label>
+                    className="block text-sm font-medium text-gray-700 mb-1.5"
+                >
+                    Nombre
+                </label>
+
                 <input
-                    type="text"
                     id="name"
-                    placeholder="Nombre de Registro"
-                    className="w-full p-3  border-gray-300 border"
+                    type="text"
+                    placeholder="Nombre"
+                    className="w-full px-3 py-2.5 text-sm border border-gray-200 rounded-lg text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#0f1f3d]/20 focus:border-[#0f1f3d]"
                     {...register("name", {
-                    required: "El Nombre de usuario es obligatorio",
+                        required: "El Nombre de usuario es obligatorio",
                     })}
                 />
+
                 {errors.name && (
                     <ErrorMessage>{errors.name.message}</ErrorMessage>
                 )}
             </div>
 
-            <div className="flex flex-col gap-5">
+            <div>
                 <label
-                    className="font-normal text-2xl"
                     htmlFor="lastname"
-                >Apellido</label>
+                    className="block text-sm font-medium text-gray-700 mb-1.5"
+                >
+                    Apellidos
+                </label>
+
                 <input
-                    type="text"
                     id="lastname"
-                    placeholder="Nombre de Registro"
-                    className="w-full p-3  border-gray-300 border"
+                    type="text"
+                    placeholder="Apellidos"
+                    className=" w-full px-3 py-2.5 text-sm border border-gray-200 rounded-lg text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#0f1f3d]/20 focus:border-[#0f1f3d]"
                     {...register("lastname", {
-                    required: "El apellido es obligatorio",
+                        required: "El apellido es obligatorio",
                     })}
                 />
+
                 {errors.lastname && (
                     <ErrorMessage>{errors.lastname.message}</ErrorMessage>
                 )}
             </div>
 
-            <div className="flex flex-col gap-5">
+            <div>
                 <label
-                    className="font-normal text-2xl"
                     htmlFor="password"
-                >Password</label>
+                    className="block text-sm font-medium text-gray-700 mb-1.5"
+                >
+                    Contraseña
+                </label>
 
                 <input
-                    type="password"
                     id="password"
-                    placeholder="Password de Registro"
-                    className="w-full p-3  border-gray-300 border"
+                    type="password"
+                    placeholder="********"
+                    className=" w-full px-3 py-2.5 text-sm border border-gray-200 rounded-lg text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#0f1f3d]/20 focus:border-[#0f1f3d]"
                     {...register("password", {
-                    required: "El Password es obligatorio",
-                    minLength: {
-                        value: 8,
-                        message: 'El Password debe ser mínimo de 8 caracteres'
-                    }
+                        required: "El Password es obligatorio",
+                        minLength: {
+                            value: 8,
+                            message: "El Password debe ser mínimo de 8 caracteres",
+                        },
                     })}
                 />
+
                 {errors.password && (
                     <ErrorMessage>{errors.password.message}</ErrorMessage>
                 )}
             </div>
 
-            <div className="flex flex-col gap-5">
+            <div>
                 <label
-                    className="font-normal text-2xl"
                     htmlFor="password_confirmation"
-                >Repetir Password</label>
+                    className="block text-sm font-medium text-gray-700 mb-1.5"
+                >
+                    Confirmar contraseña
+                </label>
 
                 <input
                     id="password_confirmation"
                     type="password"
-                    placeholder="Repite Password de Registro"
-                    className="w-full p-3  border-gray-300 border"
+                    placeholder="********"
+                    className=" w-full px-3 py-2.5 text-sm border border-gray-200 rounded-lg text-gray-700 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-[#0f1f3d]/20 focus:border-[#0f1f3d]"
                     {...register("password_confirmation", {
-                    required: "Repetir Password es obligatorio",
-                    validate: value => value === password || 'Los Passwords no son iguales'
+                        required: "Repetir Password es obligatorio",
+                        validate: value =>
+                            value === password || "Los Passwords no son iguales",
                     })}
                 />
 
                 {errors.password_confirmation && (
-                    <ErrorMessage>{errors.password_confirmation.message}</ErrorMessage>
+                    <ErrorMessage>
+                        {errors.password_confirmation.message}
+                    </ErrorMessage>
                 )}
             </div>
-        </>
-    )
+
+        </div>
+    );
 }

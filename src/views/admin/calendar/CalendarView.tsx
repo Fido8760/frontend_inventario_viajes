@@ -1,4 +1,4 @@
-import AsignacionFilter from "../../../components/admin/AsignacionFilter";
+import AsignacionFilter from "../../../components/admin/search-date/AsignacionFilter";
 
 export default function CalendarView() {
     

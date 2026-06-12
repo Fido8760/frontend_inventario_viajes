@@ -1,6 +1,6 @@
 import { Link, useNavigate } from "react-router-dom";
 import { useForm } from "react-hook-form";
-import { useEffect, useMemo } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "react-toastify";
 import AsignacionForm from "./AsignacionForm";
@@ -15,6 +15,7 @@ type Props = {
 export default function EditarAsignacionForm({ data, asignacionId }: Props) {
     const navigate    = useNavigate();
     const queryClient = useQueryClient();
+    const [cajaExterna, setCajaExterna] = useState(false);
 
     const { data: unidades }   = useQuery({ queryKey: ['unidades'],   queryFn: getUnidades,   staleTime: Infinity });
     const { data: cajas }      = useQuery({ queryKey: ['cajas'],      queryFn: getCajas,      staleTime: Infinity });
@@ -68,6 +69,12 @@ export default function EditarAsignacionForm({ data, asignacionId }: Props) {
         }
     });
 
+    const handleCajaExterna = (checked: boolean) => {
+        setCajaExterna(checked)
+        setValue("caja_externa", checked)
+        if(checked) setValue("cajaId", null)
+    }
+
     const handleForm = (formData: AsignacionFormData) => mutate({ formData, asignacionId });
 
     return (
@@ -113,6 +120,8 @@ export default function EditarAsignacionForm({ data, asignacionId }: Props) {
                         cajas={cajas || []}
                         operadores={operadores || []}
                         cajaDisabled={!isTractocamion}
+                        cajaExterna={cajaExterna}
+                        onCajaExterna={handleCajaExterna}
                     />
 
                     <button

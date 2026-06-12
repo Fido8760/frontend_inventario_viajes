@@ -5,6 +5,7 @@ import Swal from "sweetalert2";
 import { deleteUser } from "../../api/AuthAPI";
 import { User } from "../../types";
 import { useAuth } from "../../hooks/useAuth";
+import { PencilSquareIcon, TrashIcon } from "@heroicons/react/24/outline";
 
 export default function UsersTable({ data }: { data: User[] }) {
     const queryClient = useQueryClient();
@@ -40,113 +41,72 @@ export default function UsersTable({ data }: { data: User[] }) {
     };
 
     return (
-        <div className="px-4 sm:px-6 lg:px-8 mt-10 shadow-lg rounded-lg">
-            <div className="mt-8 flow-root ">
-                <div className="-mx-4 -my-2 overflow-x-auto sm:-mx-6 lg:-mx-8">
-                <div className=" min-w-full py-2 align-middle sm:px-6 lg:px-8 bg-white p-5 hidden sm:block">
-                    <table className="min-w-full divide-y divide-gray-300 ">
-                        <thead>
-                            <tr>
-                            <th
-                                scope="col"
-                                className="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-0"
-                            >
-                                Nombre
-                            </th>
+        <div className=" bg-white rounded-xl border border-gray-100 overflow-hidden">
+            <div className=" px-5 py-4 border-b border-gray-100 flex items-center justify-between">
+                <div>
+                    <p className=" text-sm font-medium text-gray-900">Usuarios Registrados</p>
+                    <p className=" text-xs text-gray-400 mt-0.5">{data.length} usuarios</p>
+                </div>
+            </div>
 
-                            <th
-                                scope="col"
-                                className="py-3.5 pl-4 pr-3 text-left text-sm font-semibold text-gray-900 sm:pl-0"
-                            >
-                                Email
-                            </th>
-                            <th
-                                scope="col"
-                                className="px-3 py-3.5 text-left text-sm font-semibold text-gray-900"
-                            >
-                                Rol
-                            </th>
+            <div className="overflow-x-hidden">
+                <table className="w-full text-sm">
+                    <thead>
+                        <tr className="text-left">
+                            <th className="px-5 py-3 text-xs font-medium text-gray-400 uppercase tracking-wide">Usuario</th>
+                            <th className="px-5 py-3 text-xs font-medium text-gray-400 uppercase tracking-wide">Correo</th>
+                            <th className="px-5 py-3 text-xs font-medium text-gray-400 uppercase tracking-wide">Rol</th>
+                            <th className="px-5 py-3 text-xs font-medium text-gray-400 uppercase tracking-wide">Acciones</th>
+                        </tr>
+                    </thead>
 
-                            <th scope="col" className="relative py-3.5 pl-3 pr-4 sm:pr-0">
-                                <span className="">Acciones</span>
-                            </th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-gray-200">
-                            {data.map((user) => (
-                            <tr key={user.id}>
-                                <td className="whitespace-nowrap px-3 py-4 text-sm text-gray-500">
-                                {user.name} {user.lastname}
-                                </td>
-                                <td className="py-4 pl-4 pr-3 text-sm font-medium text-gray-900 sm:pl-0">
-                                {user.email}
-                                </td>
-                                <td className="px-3 py-4 text-sm text-gray-500">
-                                {user.rol === 'SISTEMAS' ? "Usuario" : "Administrador"}
-                                </td>
-                                <td className="relative py-4 pl-3 pr-4 text-right text-sm font-medium sm:pr-0 ">
-                                    <div className="flex gap-5 justify-end items-center">
-                                        { authUser?.email !== user.email ? (
-                                            <>
+                    <tbody>
+                        {data.map((user) => {
+                            const roleStyles = {
+                                SISTEMAS: "bg-blue-50 text-blue-700",
+                                ADMIN: "bg-green-50 text-green-700",
+                                VIGILANTE: "bg-amber-50 text-amber-700"
+                            };
+
+                            return (
+                                <tr
+                                    key={user.id}
+                                    className="hover:bg-gray-50 transition-colors"
+                                >
+                                    <td className="px-5 py-3.5">
+                                        <div>
+                                            <p className="font-medium text-gray-900">{user.name} {user.lastname}</p>
+                                            <p className=" text-xs text-gray-400">ID #{user.id}</p>
+                                        </div>
+                                    </td>
+                                    <td className=" px-5 py-3.5 text-gray-600">{user.email}</td>
+                                    <td className=" px-5 py-3.5"><span className={` text-xs font-medium px-2.5 py-1 rounded-full ${roleStyles[user.rol as keyof typeof roleStyles] ?? "bg-gray-100 text-gray-700"}`}>{user.rol}</span></td>
+                                    <td className=" px-5 py-3.5">
+                                        {authUser?.email !== user.email && (
+                                            <div className=" flex justify-end gap-1">
                                                 <Link
-                                                    className=" text-indigo-600 hover:text-indigo-800"
                                                     to={`/users/${user.id}/edit`}
+                                                    className=" flex items-center gap-1 text-xs text-gray-500 border border-gray-200 rounded-md px-2.5 py-1.5 hover:bg-gray-50 transition-colors no-underline"
                                                 >
-                                                {" "}
-                                                    Editar <span className="sr-only">, {}</span>
+                                                    <PencilSquareIcon className="w-3.5 h-3.5" />
+                                                    Editar
                                                 </Link>
                                                 <button
                                                     type="button"
-                                                    className=" text-red-600 hover:text-red-800 cursor-pointer"
                                                     onClick={() => handleDelete(user.id)}
+                                                    className=" flex items-center gap-1 text-xs text-red-500 border border-red-200 rounded-md px-2.5 py-1.5 hover:bg-red-50 transition-colors"
                                                 >
+                                                    <TrashIcon className=" w-3.5 h-3.5" />
                                                     Eliminar
                                                 </button>
-                                            </>
-                                        ) : (
-                                            <div></div>
+                                            </div>
                                         )}
-                                    </div>
-                                </td>
-                            </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                </div>
-                <div className="sm:hidden space-y-4">
-                    {data.map((user) => (
-                    <div key={user.id} className="bg-white shadow-md rounded-lg p-4">
-                        <p className="text-lg font-semibold text-gray-800">
-                        {   user.name} {user.lastname}
-                        </p>
-                        <p className="text-sm text-gray-600">
-                            <span className="font-medium">Email:</span> {user.email}
-                        </p>
-                        <p className="text-sm text-gray-600">
-                            <span className="font-medium">Rol:</span>{" "}
-                            {user.rol === 'ADMIN' ? "Usuario" : "Administrador"}
-                        </p>
-                        <div className="mt-3 flex justify-end gap-4">
-                            { authUser?.email !== user.email ? (
-                                <>
-                                    <Link
-                                        to={`/users/${user.id}/edit`}
-                                        className="text-indigo-600 hover:text-indigo-800 text-sm"
-                                    >
-                                        Editar
-                                    </Link>
-                                    <button className="text-red-600 hover:text-red-800 text-sm">
-                                        Eliminar
-                                    </button>
-                                </>
-                            ) : (
-                                <div></div>
-                            ) }
-                        </div>
-                    </div>
-                    ))}
-                </div>
-                </div>
+                                    </td>
+                                </tr>
+                            )
+                        })}
+                    </tbody>
+                </table>
             </div>
         </div>
     );

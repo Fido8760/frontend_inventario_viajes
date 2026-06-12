@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
-import { Bars3Icon, XMarkIcon, ArrowRightOnRectangleIcon, ClipboardDocumentListIcon, CalendarIcon, UsersIcon, NewspaperIcon, CircleStackIcon, ShieldCheckIcon } from '@heroicons/react/24/outline'
+import { Bars3Icon, XMarkIcon, ArrowRightOnRectangleIcon, ClipboardDocumentListIcon, CalendarIcon, UsersIcon, NewspaperIcon, CircleStackIcon, ShieldCheckIcon, WrenchScrewdriverIcon } from '@heroicons/react/24/outline'
 import { User } from '../../types'
 import { Rol } from '../../types/roles'
 
@@ -38,6 +38,7 @@ export default function Header({ user }: { user: User }) {
                 {user.rol !== Rol.VIGILANTE && (
                     <>
                         <NavLink to="/?page=1" active={isActive('/')} label="Asignaciones" Icon={ClipboardDocumentListIcon} />
+                        <NavLink to="/inspecciones" active={isActive('/inspecciones')} label="Inspecciones" Icon={WrenchScrewdriverIcon} />
                         <NavLink to="/dashboard" active={isActive('/dashboard')} label="Dashboard KPIs" Icon={NewspaperIcon} />
                         <NavLink to="/asignaciones-date" active={isActive('/asignaciones-date')} label="Calendario" Icon={CalendarIcon} />
                     </>
@@ -98,6 +99,7 @@ export default function Header({ user }: { user: User }) {
                    {user.rol !== Rol.VIGILANTE && (
                         <>
                             <MobileLink to="/?page=1" label="Asignaciones" Icon={ClipboardDocumentListIcon} onClick={() => setMenuOpen(false)} />
+                            <MobileLink to="/inspecciones" label="Inspecciones" Icon={WrenchScrewdriverIcon} onClick={() => setMenuOpen(false)} />
                             <MobileLink to="/dashboard" label="Dashboard KPIs" Icon={NewspaperIcon} onClick={() => setMenuOpen(false)} />
                             <MobileLink to="/asignaciones-date" label="Calendario" Icon={CalendarIcon} onClick={() => setMenuOpen(false)} />
                         </>
@@ -126,9 +128,11 @@ export default function Header({ user }: { user: User }) {
 
 function NavLink({ to, active, label, Icon }: { to: string, active: boolean, label: string, Icon: React.ElementType }) {
     return (
-        <Link to={to} className={`flex items-center gap-1.5 px-3 py-1.5 rounded-md text-[13px] transition-colors no-underline ${active ? 'text-white bg-white/10' : 'text-[#8ba3c7] hover:text-white hover:bg-white/8'}`}>
-            <Icon className="w-4 h-4" />
-            {label}
+        <Link to={to} className={`flex items-center gap-1.5 px-2 py-1.5 rounded-md text-[12px] lg:text-[13px] lg:px-3 transition-colors no-underline whitespace-nowrap ${
+            active ? 'text-white bg-white/10' : 'text-[#8ba3c7] hover:text-white hover:bg-white/8'
+        }`}>
+            <Icon className="w-4 h-4 shrink-0" />
+            <span className="hidden lg:inline">{label}</span> {/* ← texto solo en lg+ */}
         </Link>
     )
 }

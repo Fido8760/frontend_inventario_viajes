@@ -23,6 +23,12 @@ import VigilanciaListView from './views/admin/vigilancia/VigilanciaListView'
 import VigilanciaEntradaView from './views/admin/vigilancia/VigilanciaEntradaView'
 import VigilanteSoloRoute from './guards/VigilanteSoloRoute'
 import VigilanciaRoute from './guards/VigilanciaRoute'
+import InspeccionesListView from './views/admin/inspeccion/InspeccionesListView'
+import CrearInspeccionView from './views/admin/inspeccion/CrearInspeccionView'
+import InspeccionDetalleView from './views/admin/inspeccion/InspeccionDetalleView'
+import InspeccionChecklistView from './views/admin/inspeccion/InspeccionChecklistView'
+import InspeccionFotosView from './views/admin/inspeccion/InspeccionFotosView'
+import InspeccionGalleryView from './views/admin/inspeccion/InspeccionGalleryView'
 
 
 export default function Router() {
@@ -39,6 +45,12 @@ export default function Router() {
                         <Route path='/asignacion/:asignacionId/editChecklist/:checklistId' element={<ChecklistLlenarView />} />
                         <Route path='/asignacion/:asignacionId/createChecklist/:checklistId/uploadImages' element={<ChecklistImageUploadView />} />
                         <Route path='/asignacion/:asignacionId/ver-fotos' element={<AsignacionGalleryView />} />
+                        <Route path='/inspecciones' element={<InspeccionesListView />} />
+                        <Route path='/inspecciones/create' element={<CrearInspeccionView />} />
+                        <Route path='/inspecciones/:inspeccionId' element={<InspeccionDetalleView />} />
+                        <Route path='/inspecciones/:inspeccionId/checklist' element={<InspeccionChecklistView />} />
+                        <Route path='/inspecciones/:inspeccionId/fotos' element={<InspeccionFotosView />} />
+                        <Route path='/inspecciones/:inspeccionId/galeria' element={<InspeccionGalleryView />} />
                         <Route path="/dashboard" element={<KpiDashboardView />} />
                         <Route path='/asignaciones-date' element={<CalendarView />} />
                         <Route path='/users' element={<UsersView />} />
