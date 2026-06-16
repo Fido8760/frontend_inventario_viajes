@@ -6,9 +6,7 @@ import DashboardView from './views/admin/DashboardView'
 import EditarAsignacionView from './views/admin/asignacion/EditarAsignacionView'
 import ChecklistCreateView from './views/admin/checklist/ChecklistCreateView'
 import ChecklistImageUploadView from './views/admin/checklist/ChecklistImageUploadView'
-import RegisterView from './views/auth/RegisterView'
 import UsersView from './views/auth/UsersView'
-import EditUserView from './views/auth/EditUserView'
 import NotFound from './views/404/NotFound'
 import NewPasswordView from './views/auth/NewPasswordView'
 import ForgotPasswordView from './views/auth/ForgotPasswordView'
@@ -54,8 +52,6 @@ export default function Router() {
                         <Route path="/dashboard" element={<KpiDashboardView />} />
                         <Route path='/asignaciones-date' element={<CalendarView />} />
                         <Route path='/users' element={<UsersView />} />
-                        <Route path='/users/register' element={<RegisterView />} />
-                        <Route path='/users/:userId/edit' element={<EditUserView />} />
                         <Route path='/admin/storage' element={<StorageView />} />
                     </Route>
                    
