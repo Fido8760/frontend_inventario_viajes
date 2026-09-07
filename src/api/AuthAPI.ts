@@ -56,7 +56,7 @@ export async function validateToken(formData: ConfirmToken) {
 
 export async function updatePasswordWithToken({formData, token}: {formData: NewPasswordForm, token: ConfirmToken['token']}) {
     try {
-        const url = `auth/reset-password/${token}`
+        const url = `/auth/reset-password/${token}`
         const { data } = await api.post<string>(url, formData)
         return data
  
@@ -122,9 +122,7 @@ type UserAPIType = {
     userId: number
 }
 export async function updateUser({formData, userId} : UserAPIType) {
-    const url = `/auth/users/${userId}`
-
-    console.log(formData)
+    const url = `/auth/users/${userId}`;
     try {
         const { data } = await api.put<string>(url, formData)
         return data
