@@ -11,7 +11,7 @@ export async function getAsignacionesEnRuta() {
         throw new Error('Error de validación en asignaciones en ruta')
     } catch (error) {
         if(isAxiosError(error) && error.response) {
-            throw new Error(error.response.data.message);
+            throw new Error(error.response.data.error);
         }
         throw error;
     }

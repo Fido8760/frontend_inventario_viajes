@@ -77,7 +77,7 @@ export default function VigilanciaCard({ asignacion }: VigilanciaCardProps) {
                     to={`/vigilancia/${asignacion.id}`}
                     className=" flex items-center gap-1 text-xs text-white bg-[#0f1f3d] border border-[#0f1f3d] rounded-md px-3 py-1.5 hover:bg-[#1a3a6b] transition-colors no-underline"
                 >
-                    Registrar Entrada
+                    Cerrar viaje
                 </Link>
             </div>
         </div>

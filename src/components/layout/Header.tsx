@@ -1,9 +1,9 @@
 import { useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
-import { Bars3Icon, XMarkIcon, ArrowRightOnRectangleIcon, ClipboardDocumentListIcon, CalendarIcon, UsersIcon, NewspaperIcon, CircleStackIcon, ShieldCheckIcon, WrenchScrewdriverIcon } from '@heroicons/react/24/outline'
+import { Bars3Icon, XMarkIcon, ArrowRightOnRectangleIcon, ClipboardDocumentListIcon, CalendarIcon, UsersIcon, NewspaperIcon, CircleStackIcon,  WrenchScrewdriverIcon, ClipboardDocumentCheckIcon } from '@heroicons/react/24/outline'
 import { User } from '../../types'
-import { Rol } from '../../types/roles'
+import { Rol, ROLES_VIGILANCIA } from '../../types/roles'
 
 export default function Header({ user }: { user: User }) {
     const [menuOpen, setMenuOpen] = useState(false)
@@ -17,7 +17,9 @@ export default function Header({ user }: { user: User }) {
 
     const initials = `${user.name[0]}${user.lastname[0]}`.toUpperCase()
 
-    const isActive = (path: string) => location.pathname === path
+    const isActive = (path: string) => location.pathname === path;
+
+    const puedeVerVigilancia = ROLES_VIGILANCIA.includes(user.rol)
 
     return (
         <header className="bg-[#0f1f3d] h-16 px-6 flex items-center justify-between relative z-50">
@@ -43,8 +45,8 @@ export default function Header({ user }: { user: User }) {
                         <NavLink to="/asignaciones-date" active={isActive('/asignaciones-date')} label="Calendario" Icon={CalendarIcon} />
                     </>
                 )}
-                {(user.rol === Rol.VIGILANTE || user.rol === Rol.SISTEMAS) && (
-                    <NavLink to="/vigilancia" active={location.pathname.startsWith('/vigilancia')} label="Vigilancia" Icon={ShieldCheckIcon} />
+                {puedeVerVigilancia && (
+                    <NavLink to="/vigilancia" active={location.pathname.startsWith('/vigilancia')} label="Cierre de viaje" Icon={ClipboardDocumentCheckIcon} />
                 )}
                 {user.rol === Rol.SISTEMAS && (
                     <>
@@ -104,8 +106,8 @@ export default function Header({ user }: { user: User }) {
                             <MobileLink to="/asignaciones-date" label="Calendario" Icon={CalendarIcon} onClick={() => setMenuOpen(false)} />
                         </>
                     )}
-                    {(user.rol === Rol.VIGILANTE || user.rol === Rol.SISTEMAS) && (
-                        <MobileLink to="/vigilancia" label="Vigilancia" Icon={ShieldCheckIcon} onClick={() => setMenuOpen(false)} />
+                    {puedeVerVigilancia && (
+                        <MobileLink to="/vigilancia" label="Cierre de viaje" Icon={ClipboardDocumentCheckIcon} onClick={() => setMenuOpen(false)} />
                     )}
                     {user.rol === Rol.SISTEMAS && (
                         <>

@@ -118,7 +118,7 @@ export default function VigilanciaEntradaView() {
                     <ShieldCheckIcon className="w-5 h-5 text-[#0f1f3d]" />
                 </div>
                 <div>
-                    <h1 className=" text-2xl font-medium text-gray-900">Registro de entrada - Unidad {data.unidad.no_unidad}</h1>
+                    <h1 className="text-2xl font-medium text-gray-900">Cierre de viaje - Unidad {data.unidad.no_unidad}</h1>
                     {data.operador && (
                         <p className=" text-sm text-gray-500 mt-0.5">
                             Operador: {data.operador.nombre} {data.operador.apellido_p} {data.operador.apellido_m}

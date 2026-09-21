@@ -4,3 +4,5 @@ export enum Rol {
     SISTEMAS = "SISTEMAS",
     VIGILANTE = "VIGILANTE"
 }
+
+export const ROLES_VIGILANCIA: Rol[] = [Rol.VIGILANTE, Rol.CAPTURISTA, Rol.SISTEMAS]
