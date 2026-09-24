@@ -306,6 +306,7 @@ const unidadEnAsignacionSchema = z.object({
     no_unidad:  z.string(),
     tipo_unidad: z.enum(['TRACTOCAMION', 'MUDANCERO', 'CAMIONETA']),
     u_placas:   z.string(),
+    marca: marcaSchema,
 })
 
 const cajaEnAsignacionSchema = z.object({
@@ -314,6 +315,7 @@ const cajaEnAsignacionSchema = z.object({
     c_placas:    z.string(),
     c_marca:     z.string(),
     c_anio:      z.number(),
+    marca: marcaSchema,
 })
 
 const operadorEnAsignacionSchema = z.object({
@@ -388,6 +390,8 @@ export const asignacionByIdApiResponseSchema = z.object({
     userId:     z.number().nullable(),
     createdAt:  z.string(),
     updatedAt:  z.string(),
+    entregaInicial: z.boolean(),
+    observaciones_entrada: z.string().nullable(),
     status:     asignacionStatusSchema.optional(),  // ← usa el enum centralizado
     usuario:    usuarioEnAsignacionSchema.nullable(),
     unidad:     unidadEnAsignacionSchema,
