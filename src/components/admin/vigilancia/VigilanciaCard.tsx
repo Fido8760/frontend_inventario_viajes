@@ -7,8 +7,14 @@ type VigilanciaCardProps = {
     asignacion: AsignacionEnRutaItem
 }
 
+function colorDiasEnRuta(dias: number) {
+    if (dias >= 4) return 'bg-red-100 text-red-700'
+    if (dias >= 2) return 'bg-amber-100 text-amber-800'
+    return 'bg-gray-100 text-gray-600'
+}
+
 export default function VigilanciaCard({ asignacion }: VigilanciaCardProps) {
-     const fotosEntrada = ['entrada_frontal', 'entrada_trasera', 'entrada_izquierdo', 'entrada_derecho'];
+    const fotosEntrada = ['entrada_frontal', 'entrada_trasera', 'entrada_izquierdo', 'entrada_derecho'];
     const imagenesSubidas = asignacion.checklist?.imagenes?.map(i => i.fieldId) ?? [];
     const fotosFaltantes = fotosEntrada.filter(f => !imagenesSubidas.includes(f));
     const todasLasFotos = fotosFaltantes.length === 0;
@@ -25,15 +31,20 @@ export default function VigilanciaCard({ asignacion }: VigilanciaCardProps) {
                         <p className=" text-xs text-gray-400 mt-0.5">{asignacion.unidad.tipo_unidad}</p>
                     </div>
                 </div>
-                {todasLasFotos ? (
-                    <span className="text-[11px] font-medium px-2.5 py-1 rounded-full bg-green-100 text-green-800">
-                        Listo para cerrar
+                <div className="flex flex-col items-end gap-1.5">
+                    {todasLasFotos ? (
+                        <span className="text-[11px] font-medium px-2.5 py-1 rounded-full bg-green-100 text-green-800">
+                            Listo para cerrar
+                        </span>
+                    ) : (
+                        <span className="text-[11px] font-medium px-2.5 py-1 rounded-full bg-amber-100 text-amber-800">
+                            {fotosFaltantes.length} foto{fotosFaltantes.length !== 1 ? 's' : ''} pendiente{fotosFaltantes.length !== 1 ? 's' : ''}
+                        </span>
+                    )}
+                    <span className={`text-[11px] font-medium px-2.5 py-1 rounded-full ${colorDiasEnRuta(asignacion.diasEnRuta)}`}>
+                        {asignacion.diasEnRuta === 0 ? 'Hoy' : `${asignacion.diasEnRuta} día${asignacion.diasEnRuta !== 1 ? 's' : ''} en ruta`}
                     </span>
-                ) : (
-                    <span className="text-[11px] font-medium px-2.5 py-1 rounded-full bg-amber-100 text-amber-800">
-                        {fotosFaltantes.length} foto{fotosFaltantes.length !== 1 ? 's' : ''} pendiente{fotosFaltantes.length !== 1 ? 's' : ''}
-                    </span>
-                )}
+                </div>
             </div>
 
             <div className=" px-4 py-3 flex flex-col gap-2">
@@ -71,7 +82,7 @@ export default function VigilanciaCard({ asignacion }: VigilanciaCardProps) {
                     <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
                     </svg>
-                    {formatDate(asignacion.updatedAt)}
+                    {formatDate(asignacion.createdAt)}
                 </span>
                 <Link
                     to={`/vigilancia/${asignacion.id}`}

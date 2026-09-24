@@ -27,7 +27,7 @@ export default function InspeccionesListView() {
     }
 
     return (
-        <div className=" max-w-5xl mx-auto">
+        <div className="space-y-6">
             <div className="mb-6 flex items-center justify-between">
                 <div>
                     <h1 className=" text-2xl font-semibold text-gray-900">Inspecciones</h1>

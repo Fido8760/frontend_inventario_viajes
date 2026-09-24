@@ -11,6 +11,7 @@ import {
     type InspeccionKpis,
     type KpisResumen,
 } from '../types';
+import { historialOperadorResponseSchema, historialUnidadResponseSchema } from '../views/admin/historial/types';
 
 export async function getKpisResumen(): Promise<KpisResumen> {
     try {
@@ -96,5 +97,37 @@ export async function getAsignacionesEnRuta(): Promise<AsignacionesEnRuta> {
             throw new Error(error.response.data.error)
         }
         throw new Error('Error al obtener asignaciones en ruta')
+    }
+}
+
+/** Historial unidades y operadores */
+
+export async function getHistorialUnidad(unidadId: number) {
+    try {
+        const { data } = await api.get(`/dashboard/unidades/${unidadId}/historial`)
+        const result = historialUnidadResponseSchema.safeParse(data)
+        if (result.success) return result.data
+        console.error('Zod error en getHistorialUnidad:', result.error.format())
+        throw new Error('Error de validación en historial de unidad')
+    } catch (error) {
+        if (isAxiosError(error) && error.response) {
+            throw new Error(error.response.data.error)
+        }
+        throw error
+    }
+}
+
+export async function getHistorialOperador(operadorId: number) {
+    try {
+        const { data } = await api.get(`/dashboard/operadores/${operadorId}/historial`)
+        const result = historialOperadorResponseSchema.safeParse(data)
+        if (result.success) return result.data
+        console.error('Zod error en getHistorialOperador:', result.error.format())
+        throw new Error('Error de validación en historial de operador')
+    } catch (error) {
+        if (isAxiosError(error) && error.response) {
+            throw new Error(error.response.data.error)
+        }
+        throw error
     }
 }

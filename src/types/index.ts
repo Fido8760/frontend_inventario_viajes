@@ -49,11 +49,17 @@ export const usuarioSchemaBase = z.object({
     rol: z.nativeEnum(Rol)
 })
 
+export const marcaSchema = z.object({
+    id: z.number(),
+    nombre: z.string()
+}).nullable()
+
 export const unidadSchemaBase = z.object({
     id: z.number(),
     no_unidad: z.string(),
     u_placas: z.string(),
-    tipo_unidad: z.string()
+    tipo_unidad: z.string(),
+    marca: marcaSchema
 })
 
 export const unidadesSchemaBase = z.array(unidadSchemaBase)
@@ -61,8 +67,9 @@ export const unidadesSchemaBase = z.array(unidadSchemaBase)
 export const cajaSchemaBase = z.object({
     id: z.number(),
     c_placas: z.string(),
-    c_marca: z.string(),
+    c_marca: z.string().nullable(),
     numero_caja: z.string(),
+    marca: marcaSchema
 })
 
 export const cajasSchemaBase = z.array(cajaSchemaBase)
@@ -89,6 +96,7 @@ export const asignacionCompletaSchema = z.object({
     cajaId: z.number().nullable(),
     operadorId: z.number().nullable(),
     userId: z.number().nullable(),
+    entregaInicial: z.boolean(),
     createdAt: z.string().datetime(),
     updatedAt: z.string().datetime(),
     usuario: usuarioSchemaBase.nullable(),
@@ -123,7 +131,7 @@ const apiPaginatedUnidadSchema = z.object({
 
 const apiPaginatedCajaSchema = z.object({
     c_placas: z.string(),
-    c_marca: z.string()
+    c_marca: z.string().nullable()
 })
 
 const apiPaginatedOperadorSchema = z.object({
@@ -145,6 +153,7 @@ const apiPaginatedAsignacionItemSchema = z.object({
     createdAt: z.string().datetime(),
     updatedAt: z.string().datetime(),
     userId: z.number(),
+    entregaInicial: z.boolean(),
     usuario: apiPaginatedUsuarioSchema,
     unidad: apiPaginatedUnidadSchema,
     caja: apiPaginatedCajaSchema.nullable(),
@@ -161,11 +170,24 @@ export const asignacionPaginationApiSchema = z.object({
 })
 export type AsignacionPaginationApiType = z.infer<typeof asignacionPaginationApiSchema>
 
+export const contextoUnidadSchema = z.object({
+    tieneHistorial: z.boolean(),
+    sugerirEntregaInicial: z.boolean(),
+    operadorAnterior: z.object({
+        id: z.number(),
+        nombre: z.string()
+    }).nullable(),
+    cambioDeRemolque: z.boolean(),
+    cajaAnteriorDeEsteOperador: z.number().nullable()
+})
+export type ContextoUnidad = z.infer<typeof contextoUnidadSchema>
+
 export const asignacionFormSchema = z.object({
     unidadId:   z.coerce.number().int().gt(0, "Seleccione unidad"),
     cajaId:     z.coerce.number().int().optional().nullable(),
     operadorId: z.coerce.number().int().gt(0, "Seleccione operador"),
     caja_externa: z.boolean().optional().default(false),
+    entregaInicial: z.boolean().optional().default(false),
 })
 export type AsignacionFormData = z.infer<typeof asignacionFormSchema>
 
@@ -475,8 +497,9 @@ export type ChecklistsStorageResponse = z.infer<typeof checklistsStorageResponse
 
 export const asignacionEnRutaItemSchema = z.object({
     id:         z.number(),
-    createdAt:  z.string(),
-    updatedAt:  z.string(),
+    createdAt:  z.string().datetime(),
+    updatedAt:  z.string().datetime(),
+    diasEnRuta: z.number(),
     status:     asignacionStatusSchema,
     unidad:     unidadSchemaBase,
     operador:   operadorSchemaBase.nullable(),

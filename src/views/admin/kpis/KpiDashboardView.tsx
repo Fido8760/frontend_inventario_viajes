@@ -463,6 +463,12 @@ function SinFotografiasTable({ data, loading }: { data?: ChecklistSinFotos[]; lo
 
 // ─── Vista principal ──────────────────────────────────────────────────────────
 
+function colorDiasEnRuta(dias: number) {
+    if (dias >= 4) return 'bg-red-50 text-red-600'
+    if (dias >= 2) return 'bg-amber-50 text-amber-700'
+    return 'bg-gray-100 text-gray-600'
+}
+
 function AsignacionesEnRutaTable({ data, loading }: { data?: AsignacionEnRutaItem[]; loading: boolean }) {
     return (
         <div className="bg-white rounded-xl border border-gray-100 overflow-hidden">
@@ -491,17 +497,18 @@ function AsignacionesEnRutaTable({ data, loading }: { data?: AsignacionEnRutaIte
                     <table className="w-full text-sm">
                         <thead>
                             <tr className="text-left">
-                                <th className="px-5 py-3 text-xs font-medium text-gray-400 uppercase tracking-wide">Unidad</th>
+                                 <th className="px-5 py-3 text-xs font-medium text-gray-400 uppercase tracking-wide">Unidad</th>
                                 <th className="px-5 py-3 text-xs font-medium text-gray-400 uppercase tracking-wide">Tipo</th>
                                 <th className="px-5 py-3 text-xs font-medium text-gray-400 uppercase tracking-wide">Placas</th>
                                 <th className="px-5 py-3 text-xs font-medium text-gray-400 uppercase tracking-wide">Operador</th>
                                 <th className="px-5 py-3 text-xs font-medium text-gray-400 uppercase tracking-wide">Caja</th>
                                 <th className="px-5 py-3 text-xs font-medium text-gray-400 uppercase tracking-wide">En ruta desde</th>
+                                <th className="px-5 py-3 text-xs font-medium text-gray-400 uppercase tracking-wide">Días</th>
                             </tr>
                         </thead>
                         <tbody className="divide-y divide-gray-50">
                             {data.map((asignacion) => (
-                                <tr key={asignacion.id} className="hover:bg-gray-50 transition-colors">
+                                 <tr key={asignacion.id} className="hover:bg-gray-50 transition-colors">
                                     <td className="px-5 py-3.5 font-medium text-gray-900">{asignacion.unidad.no_unidad}</td>
                                     <td className="px-5 py-3.5 text-gray-600 capitalize">{asignacion.unidad.tipo_unidad.toLowerCase()}</td>
                                     <td className="px-5 py-3.5 text-gray-500">{asignacion.unidad.u_placas}</td>
@@ -517,9 +524,11 @@ function AsignacionesEnRutaTable({ data, loading }: { data?: AsignacionEnRutaIte
                                             : <span className="text-gray-300">—</span>
                                         }
                                     </td>
-                                    <td className="px-5 py-3.5 text-xs">
-                                        <span className="text-gray-700 font-medium">{diasDesde(asignacion.updatedAt)}</span>
-                                        <span className="block text-gray-400">{formatDate(asignacion.updatedAt)}</span>
+                                    <td className="px-5 py-3.5 text-xs text-gray-400">{formatDate(asignacion.createdAt)}</td>
+                                    <td className="px-5 py-3.5">
+                                        <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${colorDiasEnRuta(asignacion.diasEnRuta)}`}>
+                                            {asignacion.diasEnRuta === 0 ? 'Hoy' : `${asignacion.diasEnRuta} día${asignacion.diasEnRuta !== 1 ? 's' : ''}`}
+                                        </span>
                                     </td>
                                 </tr>
                             ))}

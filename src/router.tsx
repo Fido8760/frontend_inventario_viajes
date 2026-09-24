@@ -10,7 +10,6 @@ import UsersView from './views/auth/UsersView'
 import NotFound from './views/404/NotFound'
 import NewPasswordView from './views/auth/NewPasswordView'
 import ForgotPasswordView from './views/auth/ForgotPasswordView'
-import CalendarView from './views/admin/calendar/CalendarView'
 import ChecklistLlenarView from './views/admin/checklist/ChecklistLlenarView'
 import AsignacionDetalleView from './views/admin/asignacion/AsignacionDetalleView'
 import AsignacionGalleryView from './views/admin/asignacion/AsignacionGalleryView'
@@ -27,6 +26,7 @@ import InspeccionDetalleView from './views/admin/inspeccion/InspeccionDetalleVie
 import InspeccionChecklistView from './views/admin/inspeccion/InspeccionChecklistView'
 import InspeccionFotosView from './views/admin/inspeccion/InspeccionFotosView'
 import InspeccionGalleryView from './views/admin/inspeccion/InspeccionGalleryView'
+import HistorialView from './views/admin/historial/HistorialView'
 
 
 export default function Router() {
@@ -50,7 +50,7 @@ export default function Router() {
                         <Route path='/inspecciones/:inspeccionId/fotos' element={<InspeccionFotosView />} />
                         <Route path='/inspecciones/:inspeccionId/galeria' element={<InspeccionGalleryView />} />
                         <Route path="/dashboard" element={<KpiDashboardView />} />
-                        <Route path='/asignaciones-date' element={<CalendarView />} />
+                        <Route path='/historial' element={<HistorialView />} />
                         <Route path='/users' element={<UsersView />} />
                         <Route path='/admin/storage' element={<StorageView />} />
                     </Route>

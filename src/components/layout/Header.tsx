@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
-import { Bars3Icon, XMarkIcon, ArrowRightOnRectangleIcon, ClipboardDocumentListIcon, CalendarIcon, UsersIcon, NewspaperIcon, CircleStackIcon,  WrenchScrewdriverIcon, ClipboardDocumentCheckIcon } from '@heroicons/react/24/outline'
+import { Bars3Icon, XMarkIcon, ArrowRightOnRectangleIcon, ClipboardDocumentListIcon, UsersIcon, NewspaperIcon, CircleStackIcon,  WrenchScrewdriverIcon, ClipboardDocumentCheckIcon, CalendarIcon } from '@heroicons/react/24/outline'
 import { User } from '../../types'
 import { Rol, ROLES_VIGILANCIA } from '../../types/roles'
 
@@ -42,7 +42,7 @@ export default function Header({ user }: { user: User }) {
                         <NavLink to="/?page=1" active={isActive('/')} label="Asignaciones" Icon={ClipboardDocumentListIcon} />
                         <NavLink to="/inspecciones" active={isActive('/inspecciones')} label="Inspecciones" Icon={WrenchScrewdriverIcon} />
                         <NavLink to="/dashboard" active={isActive('/dashboard')} label="Dashboard KPIs" Icon={NewspaperIcon} />
-                        <NavLink to="/asignaciones-date" active={isActive('/asignaciones-date')} label="Calendario" Icon={CalendarIcon} />
+                        <NavLink to="/historial" active={isActive('/historial')} label="Historial" Icon={CalendarIcon} />
                     </>
                 )}
                 {puedeVerVigilancia && (
@@ -103,7 +103,7 @@ export default function Header({ user }: { user: User }) {
                             <MobileLink to="/?page=1" label="Asignaciones" Icon={ClipboardDocumentListIcon} onClick={() => setMenuOpen(false)} />
                             <MobileLink to="/inspecciones" label="Inspecciones" Icon={WrenchScrewdriverIcon} onClick={() => setMenuOpen(false)} />
                             <MobileLink to="/dashboard" label="Dashboard KPIs" Icon={NewspaperIcon} onClick={() => setMenuOpen(false)} />
-                            <MobileLink to="/asignaciones-date" label="Calendario" Icon={CalendarIcon} onClick={() => setMenuOpen(false)} />
+                            <MobileLink to="/historial" label="Historial Unidades/Operadores" Icon={CalendarIcon} onClick={() => setMenuOpen(false)} />
                         </>
                     )}
                     {puedeVerVigilancia && (

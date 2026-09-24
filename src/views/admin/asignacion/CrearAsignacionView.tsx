@@ -5,17 +5,19 @@ import { useMutation, useQuery } from "@tanstack/react-query"
 import { toast } from "react-toastify"
 import AsignacionForm from "../../../components/admin/AsignacionForm"
 import { AsignacionFormData } from "../../../types"
-import { crearAsignacion, getCajas, getOperadores, getUnidades } from "../../../api/AsignacionAPI"
+import { crearAsignacion, getCajas, getContextoUnidad, getOperadores, getUnidades } from "../../../api/AsignacionAPI"
 
 export default function CrearAsignacion() {
     const navigate = useNavigate();
     const [cajaExterna, setCajaExterna] = useState(false);
+    const [entregaInicial, setEntregaInicial] = useState(false);
 
     const initialValues: AsignacionFormData = {
         unidadId: 0,
         cajaId: 0,
         operadorId: 0,
-        caja_externa: false
+        caja_externa: false,
+        entregaInicial: false,
     }
 
     const { data: unidades } = useQuery({ queryKey: ['unidades'],   queryFn: getUnidades })
@@ -26,8 +28,10 @@ export default function CrearAsignacion() {
         defaultValues: initialValues
     })
 
-    const unidadIdSeleccionada = watch("unidadId")
-    const [cajaDisabled, setCajaDisabled] = useState(false)
+    const unidadIdSeleccionada = watch("unidadId");
+    const operadorIdSeleccionado = watch("operadorId");
+    const cajaIdSeleccionada = watch("cajaId") ?? 0;
+    const [cajaDisabled, setCajaDisabled] = useState(false);
 
     useEffect(() => {
         const unidad = unidades?.find(u => u.id === +unidadIdSeleccionada)
@@ -39,7 +43,34 @@ export default function CrearAsignacion() {
         } else {
             setCajaDisabled(false)
         }
-    }, [unidadIdSeleccionada, unidades, setValue])
+    }, [unidadIdSeleccionada, unidades, setValue]);
+
+    const tieneUnidadYOperador = +unidadIdSeleccionada > 0 && +operadorIdSeleccionado > 0;
+
+    const { data: contexto } = useQuery({
+        queryKey: ['contexto-unidad', +unidadIdSeleccionada, operadorIdSeleccionado, +cajaIdSeleccionada],
+        queryFn: () => getContextoUnidad({
+            unidadId: +unidadIdSeleccionada,
+            operadorId: +operadorIdSeleccionado,
+            cajaId: cajaDisabled ? null : +cajaIdSeleccionada || null
+        }),
+        enabled: tieneUnidadYOperador
+    });
+
+    useEffect(() => {
+        if (contexto) {
+            setEntregaInicial(contexto.sugerirEntregaInicial);
+            setValue("entregaInicial", contexto.sugerirEntregaInicial)
+        } else {
+            setEntregaInicial(false);
+            setValue("entregaInicial", false)
+        }
+    }, [contexto, setValue]);
+
+    const handleEntregaInicial = (checked: boolean) => {
+        setEntregaInicial(checked);
+        setValue("entregaInicial", checked)
+    }
 
     const { mutate, isPending } = useMutation({
         mutationFn: crearAsignacion,
@@ -104,6 +135,30 @@ export default function CrearAsignacion() {
                         cajaExterna={cajaExterna}
                         onCajaExterna={handleCajaExterna}
                     />
+                    {contexto?.sugerirEntregaInicial && (
+                        <div className="mt-5 p-3 bg-blue-50 border border-blue-100 rounded-lg">
+                            <label className="flex items-start gap-2 text-sm text-blue-900 cursor-pointer">
+                                <input 
+                                    type="checkbox"
+                                    checked={entregaInicial}
+                                    onChange={e => handleEntregaInicial(e.target.checked)}
+                                    className="w-4 h-4 mt-0.5 accent-[#0f1f3d]"
+                                />
+                                 <span>
+                                    {contexto.operadorAnterior
+                                        ? <>Esta unidad la traía <strong>{contexto.operadorAnterior.nombre}</strong>. Marca esta casilla si es una entrega inicial a este operador.</>
+                                        : 'Marca esta casilla si es una entrega inicial a este operador.'}
+                                </span>
+                            </label>
+
+                        </div>
+                    )}
+
+                    {contexto?.cambioDeRemolque && !contexto.sugerirEntregaInicial && (
+                        <div className="mt-5 p-3 bg-amber-50 border border-amber-100 rounded-lg text-sm text-amber-800">
+                            El remolque cambió respecto al último viaje de este operador con esta unidad.
+                        </div>
+                    )}
 
                     <button
                         type="submit"

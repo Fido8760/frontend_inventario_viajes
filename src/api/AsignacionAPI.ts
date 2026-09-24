@@ -1,14 +1,16 @@
 import { isAxiosError } from "axios";
 import api from "../lib/axios";
-import { asignacionByIdApiResponseSchema, AsignacionCompleta, AsignacionFormData, asignacionPaginationApiSchema, cajasSchemaBase, operadoresSchemaBase, SearchByDateResponse, searchByDateSchema, unidadesSchemaBase } from "../types";
+import { asignacionByIdApiResponseSchema, AsignacionCompleta, AsignacionFormData, asignacionPaginationApiSchema, cajasSchemaBase, ContextoUnidad, contextoUnidadSchema, operadoresSchemaBase, SearchByDateResponse, searchByDateSchema, unidadesSchemaBase } from "../types";
 import { ZodError } from "zod";
 
 //Obtener todas la unidades
 export async function getUnidades() {
     try {
         const { data } = await api('/assignments/unidades')
-        const response = unidadesSchemaBase.parse(data)
-        return response
+        const response = unidadesSchemaBase.safeParse(data)
+        if (response.success) {
+            return response.data
+        }
     } catch (error) {
         if(isAxiosError(error) && error.response) {
             throw new Error(error.response.data.error)
@@ -129,6 +131,25 @@ export async function getAsignacionesSearch(search: string) {
         if(isAxiosError(error) && error.response) {
             throw new Error(error.response.data.error)
         }
+    }
+}
+
+export async function getContextoUnidad(params:{ unidadId: number, operadorId: number, cajaId?: number | null }) {
+    try {
+        const { data } = await api.get<ContextoUnidad>('/assignments/contexto-unidad', {
+            params: {
+                unidadId: params.unidadId,
+                operadorId: params.operadorId,
+                ...(params.cajaId ? { cajaId: params.cajaId } : {})
+            }
+        });
+        const result = contextoUnidadSchema.safeParse(data);
+        if (result.success) return result.data;
+    } catch (error) {
+        if (isAxiosError(error) && error.response) {
+            throw new Error(error.response.data.error)
+        }
+        throw error
     }
 }
 
