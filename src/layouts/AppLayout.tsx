@@ -22,7 +22,11 @@ export default function AppLayout() {
                 <Outlet />
             </main>
             <Footer />
-            <ToastContainer />
+            <ToastContainer 
+                autoClose={3000}
+                pauseOnFocusLoss={false}
+                pauseOnHover={false}
+            />
         </div>
     )
 }

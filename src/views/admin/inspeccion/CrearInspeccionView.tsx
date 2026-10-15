@@ -20,13 +20,13 @@ export default function CrearInspeccionView() {
 
     const { data: unidades, isLoading: loadingUnidades } = useQuery({
         queryKey: ['Unidades'],
-        queryFn: getUnidades,
+        queryFn: () => getUnidades(),
         enabled: tipo === 'UNIDAD',
     });
 
     const { data: cajas, isLoading: loadingCajas } = useQuery({
         queryKey: ['Cajas'],
-        queryFn: getCajas,
+        queryFn: () => getCajas(),
         enabled: tipo === 'REMOLQUE',
     });
 

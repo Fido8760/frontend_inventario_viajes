@@ -1,131 +1,146 @@
-import { Link, useNavigate } from "react-router-dom"
-import { HistorialOperadorItem, HistorialUnidadItem } from "../../../views/admin/historial/types"
-import { formatDate } from "../../../utils/formatDate"
+import { Link, useNavigate } from "react-router-dom";
+import { formatDate } from "../../../utils/formatDate";
 
 export type HistorialItemNormalizado = {
-    id: number
-    createdAt: string
-    updatedAt: string
-    status: string
-    entregaInicial: boolean
-    observaciones_entrada: string | null
-    tituloPrincipal: string
-    cajaId: number | null
-    cajaLabel: string | null
-    totalFotos: number
-    esVigenteEnRuta: boolean
-}
+    id: number;
+    createdAt: string;
+    fechaDevolucion: string | null;
+    motivoDevolucion: string | null;
+    tituloPrincipal: string;
+    cajaId: number | null;
+    cajaLabel: string | null;
+    totalViajes: number;
+    totalFotos: number;
+    estaActiva: boolean;
+    tieneViajeEnRuta: boolean;
+};
 
-export function normalizarHistorialUnidad(item: HistorialUnidadItem): HistorialItemNormalizado {
+// ── Normalizador para cuando buscas por UNIDAD ─────────────────────────
+export function normalizarHistorialUnidad(item: any): HistorialItemNormalizado {
+    const recorridos = item.recorridos ?? [];
+    
+    // Sumamos todas las fotos tomadas en los viajes de esta asignación
+    const totalFotos = recorridos.reduce(
+        (acc: number, r: any) => acc + (r.checklist?.imagenes?.length ?? 0), 0
+    );
+
     return {
         id: item.id,
         createdAt: item.createdAt,
-        updatedAt: item.updatedAt,
-        status: item.status,
-        entregaInicial: item.entregaInicial,
-        observaciones_entrada: item.observaciones_entrada,
+        fechaDevolucion: item.fechaDevolucion,
+        motivoDevolucion: item.motivoDevolucion,
         tituloPrincipal: item.operador
-            ? `${item.operador.nombre} ${item.operador.apellido_p} ${item.operador.apellido_m}`
-            : 'Sin operador',
+            ? `${item.operador.nombre} ${item.operador.apellido_p} ${item.operador.apellido_m ?? ''}`.trim()
+            : 'Sin operador asignado',
         cajaId: item.caja?.id ?? null,
-        cajaLabel: item.caja?.numero_caja ?? null,
-        totalFotos: item.checklist?.imagenes?.length ?? 0,
-        esVigenteEnRuta: item.status === 'EN_RUTA'
-    }
+        cajaLabel: item.caja?.numero_caja ?? item.caja?.c_placas ?? null,
+        totalViajes: recorridos.length,
+        totalFotos,
+        estaActiva: item.fechaDevolucion === null,
+        tieneViajeEnRuta: recorridos.some((r: any) => r.status === 'EN_RUTA')
+    };
 }
 
-export function normalizarHistorialOperador(item: HistorialOperadorItem): HistorialItemNormalizado {
+// ── Normalizador para cuando buscas por OPERADOR ───────────────────────
+export function normalizarHistorialOperador(item: any): HistorialItemNormalizado {
+    const recorridos = item.recorridos ?? [];
+    
+    const totalFotos = recorridos.reduce(
+        (acc: number, r: any) => acc + (r.checklist?.imagenes?.length ?? 0), 0
+    );
+
     return {
         id: item.id,
         createdAt: item.createdAt,
-        updatedAt: item.updatedAt,
-        status: item.status,
-        entregaInicial: item.entregaInicial,
-        observaciones_entrada: item.observaciones_entrada,
-        tituloPrincipal: `Unidad ${item.unidad.no_unidad}`,
+        fechaDevolucion: item.fechaDevolucion,
+        motivoDevolucion: item.motivoDevolucion,
+        tituloPrincipal: `Unidad ${item.unidad?.no_unidad ?? '—'} (${item.unidad?.u_placas ?? ''})`,
         cajaId: item.caja?.id ?? null,
-        cajaLabel: item.caja?.numero_caja ?? null,
-        totalFotos: item.checklist?.imagenes?.length ?? 0,
-        esVigenteEnRuta: item.status === 'EN_RUTA'
-    }
-}
-
-const statusLabel: Record<string, string> = {
-    CREADA: 'Creada',
-    CHECKLIST_PENDIENTE: 'Checklist pendiente',
-    FOTOS_PENDIENTES: 'Fotos pendientes',
-    EN_RUTA: 'En ruta',
-    COMPLETA: 'Completa'
-}
-
-const statusColor: Record<string, string> = {
-    CREADA: 'bg-gray-100 text-gray-600',
-    CHECKLIST_PENDIENTE: 'bg-amber-50 text-amber-700',
-    FOTOS_PENDIENTES: 'bg-amber-50 text-amber-700',
-    EN_RUTA: 'bg-blue-50 text-blue-700',
-    COMPLETA: 'bg-green-50 text-green-700'
+        cajaLabel: item.caja?.numero_caja ?? item.caja?.c_placas ?? null,
+        totalViajes: recorridos.length,
+        totalFotos,
+        estaActiva: item.fechaDevolucion === null,
+        tieneViajeEnRuta: recorridos.some((r: any) => r.status === 'EN_RUTA')
+    };
 }
 
 type HistorialCardProps = {
-    item: HistorialItemNormalizado
-    cambioDeRemolque: boolean
-}
+    item: HistorialItemNormalizado;
+    cambioDeRemolque: boolean;
+};
 
 export default function HistorialCard({ item, cambioDeRemolque }: HistorialCardProps) {
     const navigate = useNavigate();
+
     return (
         <div
             onClick={() => navigate(`/asignacion/${item.id}`)}
-            className={`cursor-pointer bg-white rounded-xl border p-4 transition-colors hover:border-gray-300 ${
-                item.entregaInicial
-                    ? 'border-blue-200 bg-blue-50/40'
+            className={`cursor-pointer bg-white rounded-xl border p-4 transition-all hover:border-gray-300 hover:shadow-sm ${
+                item.estaActiva 
+                    ? 'border-emerald-200 bg-emerald-50/20' 
                     : 'border-gray-100'
             }`}
         >
             <div className="flex items-start justify-between gap-3">
                 <div>
-                    <div className="flex items-center gap-1.5 flex-wrap mb-1">
-                        {item.entregaInicial && (
-                            <span className="text-[10px] font-bold uppercase tracking-wide text-blue-700 bg-blue-100 px-2 py-0.5 rounded-full">
-                                Entrega inicial
+                    {/* Badges de Estado de la Asignación */}
+                    <div className="flex items-center gap-1.5 flex-wrap mb-1.5">
+                        {item.estaActiva ? (
+                            <span className="text-[10px] font-bold uppercase tracking-wide text-emerald-700 bg-emerald-100 px-2 py-0.5 rounded-full flex items-center gap-1">
+                                <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse"></span>
+                                Asignación Activa
+                            </span>
+                        ) : (
+                            <span className="text-[10px] font-bold uppercase tracking-wide text-gray-600 bg-gray-100 px-2 py-0.5 rounded-full">
+                                Devuelta · {item.motivoDevolucion ? item.motivoDevolucion.replace(/_/g, ' ') : 'Fin de turno'}
                             </span>
                         )}
-                        {cambioDeRemolque && !item.entregaInicial && (
+
+                        {item.tieneViajeEnRuta && (
                             <span className="text-[10px] font-bold uppercase tracking-wide text-purple-700 bg-purple-100 px-2 py-0.5 rounded-full">
+                                En carretera
+                            </span>
+                        )}
+
+                        {cambioDeRemolque && (
+                            <span className="text-[10px] font-bold uppercase tracking-wide text-blue-700 bg-blue-100 px-2 py-0.5 rounded-full">
                                 Cambio de remolque
                             </span>
                         )}
                     </div>
-                    <p className="text-sm font-medium text-gray-800">{item.tituloPrincipal}</p>
-                    <p className="text-xs text-gray-400 mt-0.5">
-                        {formatDate(item.createdAt)}
-                        {item.cajaLabel && ` · Caja ${item.cajaLabel}`}
+
+                    {/* Título (Chofer o Unidad) */}
+                    <p className="text-sm font-bold text-gray-900">{item.tituloPrincipal}</p>
+                    
+                    {/* Metadatos */}
+                    <p className="text-xs text-gray-400 mt-1">
+                        Entrega: {formatDate(item.createdAt)}
+                        {item.fechaDevolucion && ` · Cierre: ${formatDate(item.fechaDevolucion)}`}
+                        {item.cajaLabel && ` · Remolque: Caja ${item.cajaLabel}`}
                     </p>
                 </div>
-                <span className={`text-[11px] font-medium px-2.5 py-1 rounded-full shrink-0 ${statusColor[item.status] ?? 'bg-gray-100 text-gray-600'}`}>
-                    {statusLabel[item.status] ?? item.status}
-                </span>
+
+                {/* Contador de Viajes */}
+                <div className="text-right shrink-0">
+                    <span className="text-xs font-bold text-gray-800 bg-gray-100 border border-gray-200 px-2.5 py-1 rounded-lg">
+                        {item.totalViajes} viaje{item.totalViajes !== 1 ? 's' : ''}
+                    </span>
+                </div>
             </div>
 
-
-            {item.observaciones_entrada && (
-                <p className="text-xs text-amber-700 bg-amber-50 border border-amber-100 rounded-lg px-3 py-2 mt-3">
-                    {item.observaciones_entrada}
-                </p>
-            )}
-
-            <div
-                className="flex items-center justify-between mt-3 pt-3 border-t border-gray-50"
-            >
-                <span className="text-xs text-gray-400">{item.totalFotos} foto{item.totalFotos !== 1 ? 's' : ''} en este viaje</span>
+            {/* Footer de la Tarjeta */}
+            <div className="flex items-center justify-between mt-3 pt-3 border-t border-gray-100 text-xs">
+                <span className="text-gray-400">
+                    {item.totalFotos} fotografía{item.totalFotos !== 1 ? 's' : ''} de evidencia acumuladas
+                </span>
                 <Link
-                    to={`/asignacion/${item.id}/ver-fotos`}
+                    to={`/asignacion/${item.id}`}
                     onClick={e => e.stopPropagation()}
-                    className="text-xs text-[#0f1f3d] font-medium hover:underline"
+                    className="text-xs font-semibold text-[#0f1f3d] hover:underline flex items-center gap-1"
                 >
-                    Ver fotos →
+                    Ver centro de mando →
                 </Link>
             </div>
         </div>
-    )
+    );
 }

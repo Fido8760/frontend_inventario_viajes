@@ -1,7 +1,7 @@
 import { useState } from 'react'
 import { Link, useLocation } from 'react-router-dom'
 import { useQueryClient } from '@tanstack/react-query'
-import { Bars3Icon, XMarkIcon, ArrowRightOnRectangleIcon, ClipboardDocumentListIcon, UsersIcon, NewspaperIcon, CircleStackIcon,  WrenchScrewdriverIcon, ClipboardDocumentCheckIcon, CalendarIcon } from '@heroicons/react/24/outline'
+import { Bars3Icon, XMarkIcon, ArrowRightOnRectangleIcon, ClipboardDocumentListIcon, UsersIcon, NewspaperIcon, CircleStackIcon, WrenchScrewdriverIcon, ClipboardDocumentCheckIcon, CalendarIcon } from '@heroicons/react/24/outline'
 import { User } from '../../types'
 import { Rol, ROLES_VIGILANCIA } from '../../types/roles'
 
@@ -10,36 +10,43 @@ export default function Header({ user }: { user: User }) {
     const queryClient = useQueryClient()
     const location = useLocation()
 
+    // 🔒 Logout seguro limpiando toda la memoria
     const logout = () => {
         localStorage.removeItem('AUTH_TOKEN')
-        queryClient.invalidateQueries({ queryKey: ["user"] })
+        queryClient.clear()
     }
 
-    const initials = `${user.name[0]}${user.lastname[0]}`.toUpperCase()
+    // 🛡️ Iniciales blindadas contra valores nulos
+    const initials = `${user.name?.[0] ?? ''}${user.lastname?.[0] ?? ''}`.toUpperCase() || 'U'
 
     const isActive = (path: string) => location.pathname === path;
+    const isAsignacionesActive = location.pathname === '/' || location.pathname.startsWith('/asignacion');
 
     const puedeVerVigilancia = ROLES_VIGILANCIA.includes(user.rol)
+    
+    // 🏠 Destino del logo según el rol
+    const homePath = user.rol === Rol.VIGILANTE ? '/vigilancia' : '/?page=1'
 
     return (
-        <header className="bg-[#0f1f3d] h-16 px-6 flex items-center justify-between relative z-50">
-
-            {/* Logo */}
-             <div className="flex-1 flex items-center">
-                <Link to="/?page=1" className="flex items-center gap-3 no-underline">
-                    <img src="/AMADO_LOGO.png" alt="Amado" className="h-14 w-auto object-contain" />
-                    <div className="hidden lg:block">
-                        <p className="text-white text-base font-medium leading-tight">Muebles y Mudanzas</p>
-                        <p className="text-white text-xl font-bold leading-tight tracking-wide">Amado</p>
+        <header className="bg-[#0f1f3d] h-16 px-4 lg:px-6 flex items-center justify-between gap-4 relative z-50">
+            <div className="flex items-center shrink-0">
+                <Link to={homePath} className="flex items-center gap-2.5 no-underline">
+                    {/* Imagen con altura controlada (h-10) para que no desborde la barra */}
+                    <img src="/AMADO_LOGO.png" alt="Amado" className="h-10 w-auto object-contain shrink-0" />
+                    
+                    {/* Texto compacto visible solo en pantallas donde realmente cabe (xl+) */}
+                    <div className="hidden xl:block shrink-0">
+                        <p className="text-white text-[11px] font-medium leading-none">Muebles y Mudanzas</p>
+                        <p className="text-white text-base font-bold leading-tight tracking-wide">Amado</p>
                     </div>
                 </Link>
             </div>
 
-            {/* Nav desktop */}
-            <nav className="hidden md:flex items-center gap-1">
+            {/* Nav desktop (con flex-wrap prevenido y espaciado elástico) */}
+            <nav className="hidden md:flex items-center gap-1 shrink min-w-0 overflow-hidden">
                 {user.rol !== Rol.VIGILANTE && (
                     <>
-                        <NavLink to="/?page=1" active={isActive('/')} label="Asignaciones" Icon={ClipboardDocumentListIcon} />
+                        <NavLink to="/?page=1" active={isAsignacionesActive} label="Asignaciones" Icon={ClipboardDocumentListIcon} />
                         <NavLink to="/inspecciones" active={isActive('/inspecciones')} label="Inspecciones" Icon={WrenchScrewdriverIcon} />
                         <NavLink to="/dashboard" active={isActive('/dashboard')} label="Dashboard KPIs" Icon={NewspaperIcon} />
                         <NavLink to="/historial" active={isActive('/historial')} label="Historial" Icon={CalendarIcon} />
@@ -51,13 +58,13 @@ export default function Header({ user }: { user: User }) {
                 {user.rol === Rol.SISTEMAS && (
                     <>
                         <NavLink to="/users" active={isActive('/users')} label="Usuarios" Icon={UsersIcon} />
-                        <NavLink to="/admin/storage" active={isActive('/admin/storage')} label="Almacenamiento de Imagenes" Icon={CircleStackIcon} />
+                        <NavLink to="/admin/storage" active={isActive('/admin/storage')} label="Almacenamiento" Icon={CircleStackIcon} />
                     </>
                 )}
             </nav>
 
-            {/* Usuario + logout desktop */}
-            <div className="flex-1 flex items-center justify-end gap-3">
+            {/* Usuario + logout desktop (shrink-0) */}
+            <div className="flex items-center justify-end gap-3 shrink-0">
                 <div className="hidden md:flex items-center gap-2">
                     <div className="text-right">
                         <p className="text-white text-[13px] font-medium leading-none">{user.name} {user.lastname}</p>
@@ -80,10 +87,9 @@ export default function Header({ user }: { user: User }) {
                 </button>
             </div>
 
-
             {/* Mobile menu */}
             {menuOpen && (
-                <div className="md:hidden absolute top-16 left-0 right-0 bg-[#0f1f3d] border-t border-white/10 p-3 flex flex-col gap-1">
+                <div className="md:hidden absolute top-16 left-0 right-0 bg-[#0f1f3d] border-t border-white/10 p-3 flex flex-col gap-1 shadow-2xl">
                     <div className="flex items-center gap-3 px-4 py-2.5">
                         <div className="w-10 h-10 rounded-full bg-[#1a3a6b] border border-[#2d5a9e] flex items-center justify-center text-[#8ba3c7] text-xs font-medium shrink-0">
                             {initials}
@@ -98,7 +104,7 @@ export default function Header({ user }: { user: User }) {
 
                     <div className="h-px bg-white/10 my-1.5" />
 
-                   {user.rol !== Rol.VIGILANTE && (
+                    {user.rol !== Rol.VIGILANTE && (
                         <>
                             <MobileLink to="/?page=1" label="Asignaciones" Icon={ClipboardDocumentListIcon} onClick={() => setMenuOpen(false)} />
                             <MobileLink to="/inspecciones" label="Inspecciones" Icon={WrenchScrewdriverIcon} onClick={() => setMenuOpen(false)} />
@@ -130,11 +136,11 @@ export default function Header({ user }: { user: User }) {
 
 function NavLink({ to, active, label, Icon }: { to: string, active: boolean, label: string, Icon: React.ElementType }) {
     return (
-        <Link to={to} className={`flex items-center gap-1.5 px-2 py-1.5 rounded-md text-[12px] lg:text-[13px] lg:px-3 transition-colors no-underline whitespace-nowrap ${
+        <Link to={to} title={label} className={`flex items-center gap-1.5 px-2.5 py-1.5 rounded-md text-[12px] xl:text-[13px] transition-colors no-underline whitespace-nowrap ${
             active ? 'text-white bg-white/10' : 'text-[#8ba3c7] hover:text-white hover:bg-white/8'
         }`}>
             <Icon className="w-4 h-4 shrink-0" />
-            <span className="hidden lg:inline">{label}</span> {/* ← texto solo en lg+ */}
+            <span className="hidden xl:inline">{label}</span>
         </Link>
     )
 }

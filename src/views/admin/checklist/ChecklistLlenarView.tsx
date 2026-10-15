@@ -25,29 +25,31 @@ export default function ChecklistLlenarView() {
   const navigate = useNavigate();
 
   const asignacionId = params.asignacionId ? +params.asignacionId : NaN;
-  const checklistId = params.checklistId ? +params.checklistId : NaN;
+  const recorridoId  = params.recorridoId ? +params.recorridoId : NaN;
+  const checklistId  = params.checklistId ? +params.checklistId : NaN;
 
 
   if(isNaN(asignacionId) || isNaN(checklistId)) {
-    return <Navigate to={"/?page=1"} replace />;
+    return <Navigate to="/" replace />;
   }
 
   const { data, isLoading, isError, secciones, seccionActual, setSeccionActual, totalSecciones, isGuardando, isFinalizando, checklistCompleto, handleGuardarSeccion, handleFinalizar } = useChecklistFlow({
-    queryKey: ['Checklist', asignacionId, checklistId],
-    queryFn: () => getChecklist(asignacionId, checklistId),
+    queryKey: ['Checklist', asignacionId, recorridoId, checklistId],
+    queryFn: () => getChecklist(asignacionId, recorridoId, checklistId),
     normalizeSecciones: normalizarChecklistAsignacion,
     guardarFn: (respuestas: RespuestaFlow[]) => guardarRespuestas({ 
-    asignacionId, 
+    asignacionId,
+    recorridoId,
     checklistId, 
     respuestas: respuestas.map(r => ({ 
         preguntaId: r.preguntaId, 
         valor: r.valor ?? '' 
     }))
-}),
-    finalizarFn: () => finalizarChecklist({ asignacionId, checklistId }),
+  }),
+    finalizarFn: () => finalizarChecklist({ asignacionId, recorridoId, checklistId }),
     onFinalizarSuccess: (data) => {
       toast.success(data.message);
-      navigate(`/asignacion/${asignacionId}/createChecklist/${checklistId}/uploadImages`)
+      navigate(`/asignacion/${asignacionId}/recorridos/${recorridoId}/checklist/${checklistId}/uploadImages`);
     },
     estaCompleto: (data: ChecklistDetalle) => data.status === 'COMPLETO',
   });

@@ -1,228 +1,206 @@
-import { isAxiosError } from "axios";
 import api from "../lib/axios";
-import { asignacionByIdApiResponseSchema, AsignacionCompleta, AsignacionFormData, asignacionPaginationApiSchema, cajasSchemaBase, ContextoUnidad, contextoUnidadSchema, operadoresSchemaBase, SearchByDateResponse, searchByDateSchema, unidadesSchemaBase } from "../types";
-import { ZodError } from "zod";
+import { asignacionByIdApiResponseSchema, AsignacionFormData, asignacionPaginationApiSchema, EstadisticasChecklistResponse, estadisticasChecklistResponseSchema } from "../types/asignacion";
+import { unidadesListSchema } from "../types/unidad";     
+import { cajasListSchema } from "../types/caja";           
+import { operadoresListSchema } from "../types/operador";   
+import { getErrorMessage } from "../utils/apiHerpers";
 
-//Obtener todas la unidades
-export async function getUnidades() {
+type DisponiblesOpts = { disponibles?: boolean; excluirAsignacion?: number };
+
+function normalizarOpts(arg: boolean | DisponiblesOpts): DisponiblesOpts {
+    return typeof arg === 'boolean' ? { disponibles: arg } : arg;
+}
+
+function buildParams({ disponibles, excluirAsignacion }: DisponiblesOpts) {
+    return {
+        ...(disponibles && { disponibles: true }),
+        ...(disponibles && excluirAsignacion && { excluirAsignacion })
+    };
+}
+
+export async function getUnidades(arg: boolean | DisponiblesOpts = false) {
     try {
-        const { data } = await api('/assignments/unidades')
-        const response = unidadesSchemaBase.safeParse(data)
+        const { data } = await api('/assignments/unidades', {
+            params: buildParams(normalizarOpts(arg))
+        });
+        const response = unidadesListSchema.safeParse(data);
+        if (response.success) return response.data;
+        console.error("Zod error en getUnidades:", response.error.format());
+        throw new Error("Datos de unidades inválidos");
+    } catch (error) {
+        throw new Error(getErrorMessage(error, `No se pudieron obtener unidades`));
+    }
+}
+
+export async function getCajas(disponibles = false) {
+    try {
+        const url = disponibles ? '/assignments/cajas?disponibles=true' : '/assignments/cajas';
+        const { data } = await api(url);
+        const response = cajasListSchema.safeParse(data);
         if (response.success) {
-            return response.data
+            return response.data;
         }
+        console.error("Zod error en getCajas:", response.error.format());
+        throw new Error("Datos de cajas inválidos");
     } catch (error) {
-        if(isAxiosError(error) && error.response) {
-            throw new Error(error.response.data.error)
-        } else if ( error instanceof ZodError) {
-            console.error("Error Zod en getUnidades:", error.errors);
-            throw new Error("Los datos de operadores recibidos no son válidos.");
-        } else {
-            console.error("Error desconocido en getUnidades:", error)
-            throw new Error("Ocurrió un error inesperado al obtener las unidades.");
-        }
+        throw new Error(getErrorMessage(error, `No se pudieron obtener cajas`));
     }
 }
 
-// Obtener todas las cajas
-export async function getCajas() {
+export async function getOperadores(disponibles = false) {
     try {
-        const { data } = await api('/assignments/cajas');
-        const response = cajasSchemaBase.safeParse(data);
-        if(response.success) {
-            return response.data
+        const url = disponibles ? '/assignments/operadores?disponibles=true' : '/assignments/operadores';
+        const { data } = await api(url);
+        const response = operadoresListSchema.safeParse(data);
+        if (response.success) {
+            return response.data;
         }
+        console.error("Zod error en getOperadores:", response.error.format());
+        throw new Error("Datos de operadores inválidos");
     } catch (error) {
-        if (isAxiosError(error) && error.response) {
-            throw new Error(error.response.data.error);
-        } else if ( error instanceof ZodError) {
-            console.error("Error Zod en getCajas:", error.errors);
-            throw new Error("Los datos de operadores recibidos no son válidos.");
-        } else {
-            console.error("Error desconocido en getCajas:", error)
-            throw new Error("Ocurrió un error inesperado al obtener las cajas.");
-        }
+        throw new Error(getErrorMessage(error, `No se pudieron obtener operadores`));
     }
 }
 
-
-// Obtener todos los operadores
-export async function getOperadores() {
+export async function getAsignaciones() {
     try {
-        const { data } = await api('/assignments/operadores');
-        const response = operadoresSchemaBase.parse(data);
-        return response
-        
+        const url = `/assignments`;
+        const { data } = await api(url);
+        const response = asignacionPaginationApiSchema.safeParse(data);
+        if (response.success) {
+            return response.data;
+        }
+        console.error('Zod validation error en getAsignaciones:', JSON.stringify(response.error.format(), null, 2));
+        throw new Error('Error de validación en asignaciones');
     } catch (error) {
-        if (isAxiosError(error) && error.response) {
-            throw new Error(error.response.data.error);
-        } else if ( error instanceof ZodError) {
-            console.error("Error Zod en getOperadores:", error.errors);
-            throw new Error("Los datos de operadores recibidos no son válidos.");
-        } else {
-            console.error("Error desconocido en getOperadores:", error)
-            throw new Error("Ocurrió un error inesperado al obtener operadores.");
-        }
-    }
-}
-
-
-export async function getAsignaciones(take: number, skip: number) {
-    
-    try {
-        const url = `/assignments?take=${take}&skip=${skip}`
-        const { data } = await api(url)
-        const response = asignacionPaginationApiSchema.safeParse(data)
-        if(response.success) {
-            return response.data
-        }
-        console.error('Zod validation error:', JSON.stringify(response.error.format(), null, 2))
-        throw new Error('Error de validación en asignaciones')
-
-    } catch (error) {
-        if(isAxiosError(error) && error.response) {
-            throw new Error(error.response.data.error)
-        }
-        throw error
-    }
-}
-
-export async function getAsignacionesDate(date: string) {
-    const url = `/assignments?asignacionDate=${date}`
-    
-    try {
-        const { data } = await api(url)
-        const response = asignacionPaginationApiSchema.safeParse(data)
-        if(response.success) {
-            return response.data
-        }
-    } catch (error) {
-        if(isAxiosError(error) && error.response) {
-            throw new Error(error.response.data.error)
-        }
-    }
-}
-
-export async function getResultadosPorFecha(date: string): Promise<SearchByDateResponse> {
-    try {
-        const { data } = await api(`/search/by-date?date=${date}`)
-        const response = searchByDateSchema.safeParse(data)
-        if (response.success) return response.data
-        console.error('Zod error en getResultadosPorFecha:', response.error.errors)
-        throw new Error('Error de validación en búsqueda por fecha')
-    } catch (error) {
-        if (isAxiosError(error) && error.response) {
-            throw new Error(error.response.data.error)
-        }
-        throw error
+        throw new Error(getErrorMessage(error, `No se pudieron obtener asignaciones`));
     }
 }
 
 export async function getAsignacionesSearch(search: string) {
-    const url = `/assignments?search=${search}`
-    
     try {
-        const { data } = await api(url)
-        const response = asignacionPaginationApiSchema.safeParse(data)
-        if(response.success) {
-            return response.data
+        const url = `/assignments?search=${encodeURIComponent(search)}`;
+        const { data } = await api(url);
+        const response = asignacionPaginationApiSchema.safeParse(data);
+        if (response.success) {
+            return response.data;
         }
+        throw new Error('Error de validación en búsqueda de asignaciones');
     } catch (error) {
-        if(isAxiosError(error) && error.response) {
-            throw new Error(error.response.data.error)
-        }
-    }
-}
-
-export async function getContextoUnidad(params:{ unidadId: number, operadorId: number, cajaId?: number | null }) {
-    try {
-        const { data } = await api.get<ContextoUnidad>('/assignments/contexto-unidad', {
-            params: {
-                unidadId: params.unidadId,
-                operadorId: params.operadorId,
-                ...(params.cajaId ? { cajaId: params.cajaId } : {})
-            }
-        });
-        const result = contextoUnidadSchema.safeParse(data);
-        if (result.success) return result.data;
-    } catch (error) {
-        if (isAxiosError(error) && error.response) {
-            throw new Error(error.response.data.error)
-        }
-        throw error
+        throw new Error(getErrorMessage(error, `No se pudieron obtener asignaciones`));
     }
 }
 
 type CrearAsignacionResponse = {
     message: string;
     id: number;
-}
+};
   
 export async function crearAsignacion(formData: AsignacionFormData) {
-    
     try {
-        const { data } = await api.post<CrearAsignacionResponse>('/assignments', formData)
-
-        return data
+        const { data } = await api.post<CrearAsignacionResponse>('/assignments', formData);
+        return data;
     } catch (error) {
-        if(isAxiosError(error) && error.response) {
-            const data = error.response.data
-            if (data?.errors?.[0]?.msg) {
-                throw new Error(data.errors[0].msg)
-            }
-            
-            throw new Error(data?.error || "Error desconocido")
-        }
+        throw new Error(getErrorMessage(error, `No se pudo crear la asignación`));
     }
 }
 
-export async function getAsignacionById(id: AsignacionCompleta['id']) {
-    
+export async function getAsignacionById(id: number | string) {
     try {
-        const { data } = await api(`/assignments/${id}`)
-        const result = asignacionByIdApiResponseSchema.safeParse(data)
-        if(result.success) {
-            return result.data
+        const { data } = await api(`/assignments/${id}`);
+        const result = asignacionByIdApiResponseSchema.safeParse(data);
+        if (result.success) {
+            return result.data;
         }
 
-        console.error('Zod error:', result.error.format())
-        throw new Error('Error de validación en asignaciones')
+        console.error('Zod error en getAsignacionById:', JSON.stringify(result.error.format(), null, 2));
+        throw new Error('Error de validación en asignaciones');
     } catch (error) {
-        if(isAxiosError(error) && error.response) {
-            throw new Error(error.response.data.error)
-        }
+        throw new Error(getErrorMessage(error, `No se pudo obtener la asignación`));
     }
 }
 
 type AsignacionAPIType = {
-    formData: AsignacionFormData
-    asignacionId: AsignacionCompleta['id']
-}
+    formData: AsignacionFormData;
+    asignacionId: number;
+};
 
-export async function updateAsignacion({formData, asignacionId} : AsignacionAPIType) {
-    
+export async function updateAsignacion({ formData, asignacionId }: AsignacionAPIType) {
     try {
-        const { data } = await api.put<string>(`/assignments/${asignacionId}`, formData)
-        return data
+        const { data } = await api.put<{message:string}>(`/assignments/${asignacionId}`, formData);
+        return data;
     } catch (error) {
-        let errorMessage 
-        if(isAxiosError(error) && error.response) {
-            const responseData = error.response.data 
-            errorMessage = responseData.errors[0].msg;
-        }
-        throw new Error(errorMessage);
+        throw new Error(getErrorMessage(error, `No se pudo actualizar la asignación`));
     }
 }
 
-export async function deleteAsignacion(id: AsignacionCompleta['id']) {
-    
+export async function deleteAsignacion(id: number) { 
     try {
-        const { data } = await api.delete<string>(`/assignments/${id}`)
-        return data
+        const { data } = await api.delete<string>(`/assignments/${id}`);
+        return data;
     } catch (error) {
-        if(isAxiosError(error) && error.response) {
-            throw new Error(error.response.data.error)
-        }
+        throw new Error(getErrorMessage(error, `No se pudo eliminar la asignación`));
     }
 }
 
+// ── Cambio de Remolque con soporte de traspaso ────────────────────────
+
+export interface ActualizarCajaParams {
+    asignacionId: number;
+    cajaId: number;
+    motivo?: string;
+    observaciones?: string;
+    confirmarTraspaso?: boolean;
+}
+
+export async function actualizarCaja({ asignacionId, ...body }: ActualizarCajaParams) {
+    try {
+        const { data } = await api.patch<{ message: string }>(
+            `/assignments/${asignacionId}/caja`, 
+            body
+        );
+        return data;
+    } catch (error: any) {
+        if (error.response?.data?.requiereConfirmacion) {
+            return error.response.data;
+        }
+        throw new Error(getErrorMessage(error, "No se pudo actualizar el remolque"));
+    }
+}
+
+// ── Devolver Asignación ───────────────────────────────────────────────
+
+export interface DevolverParams {
+    asignacionId: number;
+    motivoDevolucion: string;
+    observacionesDevolucion?: string;
+}
+
+export async function devolverAsignacion({ asignacionId, ...body }: DevolverParams) {
+    try {
+        const { data } = await api.post<{ message: string }>(
+            `/assignments/${asignacionId}/devolver`, 
+            body
+        );
+        return data;
+    } catch (error) {
+        throw new Error(getErrorMessage(error, "No se pudo devolver la asignación"));
+    }
+}
+
+export async function getEstadisticasChecklist(asignacionId: number): Promise<EstadisticasChecklistResponse | null> {
+    try {
+        const { data } = await api.get(`/assignments/${asignacionId}/estadisticas-checklist`);
+        
+        if (data.totalRespuestas === 0) return null;
+
+        const result = estadisticasChecklistResponseSchema.safeParse(data);
+        if (!result.success) {
+            console.error("Zod error en getEstadisticasChecklist:", result.error);
+            throw new Error("Datos de estadísticas inválidos");
+        }
+        return result.data;
+    } catch (error) {
+         throw new Error(getErrorMessage(error, "No se pudo devolver la asignación"));;
+    }
+}

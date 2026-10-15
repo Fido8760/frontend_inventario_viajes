@@ -1,4 +1,3 @@
-// views/admin/storage/StorageView.tsx
 import { useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { toast } from 'react-toastify'
@@ -62,6 +61,7 @@ export default function StorageView() {
                     onChange={e => { setAntiguedad(+e.target.value); setSeleccionados([]) }}
                     className="border border-gray-200 rounded-lg px-3 py-1.5 text-sm text-gray-700"
                 >
+                    <option value={0}>Todos / Hoy (Modo Prueba)</option>
                     <option value={1}>1 año</option>
                     <option value={2}>2 años</option>
                     <option value={3}>3 años</option>

@@ -1,12 +1,12 @@
 import { isAxiosError } from "axios";
 import api from "../lib/axios";
-import { asignacionesEnRutaSchema } from "../types";
+import { recorridosEnRutaSchema } from "../types";
 
-export async function getAsignacionesEnRuta() {
+export async function getRecorridosEnRuta() {
     try {
         const { data } = await api.get('/assignments/en-ruta');
-        const result = asignacionesEnRutaSchema.safeParse(data);
-        if (result.success) return result.data.asignaciones;
+        const result = recorridosEnRutaSchema.safeParse(data);
+        if (result.success) return result.data;
         console.error('Zod error en getAsignacionesEnRuta:', result.error.format())
         throw new Error('Error de validación en asignaciones en ruta')
     } catch (error) {

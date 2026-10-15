@@ -3,80 +3,95 @@ import { useForm } from "react-hook-form";
 import { useEffect, useMemo, useState } from "react";
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "react-toastify";
-import AsignacionForm from "./AsignacionForm";
-import { AsignacionCompleta, AsignacionFormData, UnidadBase } from "../../types";
+import AsignacionForm from "./asignacion/AsignacionForm";
 import { getCajas, getOperadores, getUnidades, updateAsignacion } from "../../api/AsignacionAPI";
+import { AsignacionFormData, AsignacionItem } from "../../types/asignacion";
 
 type Props = {
-    data: AsignacionCompleta;
+    data: AsignacionItem;
     asignacionId: number;
 };
 
 export default function EditarAsignacionForm({ data, asignacionId }: Props) {
     const navigate    = useNavigate();
     const queryClient = useQueryClient();
-    const [cajaExterna, setCajaExterna] = useState(false);
 
-    const { data: unidades }   = useQuery({ queryKey: ['unidades'],   queryFn: getUnidades,   staleTime: Infinity });
-    const { data: cajas }      = useQuery({ queryKey: ['cajas'],      queryFn: getCajas,      staleTime: Infinity });
-    const { data: operadores } = useQuery({ queryKey: ['operadores'], queryFn: getOperadores, staleTime: Infinity });
+    const { data: unidades, isLoading: loadingUnidades } = useQuery({ queryKey: ['unidades'],   queryFn: () => getUnidades(),   staleTime: Infinity });
+    const { data: cajas, isLoading: loadingCajas } = useQuery({ queryKey: ['cajas'],      queryFn: () => getCajas(),      staleTime: Infinity });
+    const { data: operadores, isLoading: loadingOperadores } = useQuery({ queryKey: ['operadores'], queryFn: () => getOperadores(), staleTime: Infinity });
 
-    const { register, handleSubmit, formState: { errors }, reset, watch, setValue } = useForm<AsignacionFormData>();
-
-    const tipoUnidadOriginal = data.unidad.tipo_unidad;
-
-    useEffect(() => {
-        if (data && unidades && cajas && operadores) {
-            reset({
-                unidadId:   data.unidadId,
-                cajaId:     data.cajaId ?? undefined,
-                operadorId: data.operadorId ?? 0
-            });
+    const { register, handleSubmit, formState: { errors }, watch, setValue } = useForm<AsignacionFormData>({
+        defaultValues: {
+            unidadId: data.unidadId,
+            cajaId: data.cajaId ?? undefined,
+            operadorId: data.operadorId ?? 0,
         }
-    }, [data, unidades, cajas, operadores, reset]);
-
+    });
+    
+    const [cajaDisabled, setCajaDisabled] = useState(false);
     const selectedUnidadId = watch('unidadId');
-    const selectedUnidad   = useMemo(() => {
-        const id = selectedUnidadId ? +selectedUnidadId : undefined;
-        return unidades?.find((u: UnidadBase) => u.id === id);
-    }, [selectedUnidadId, unidades]);
 
-    const isTractocamion = selectedUnidad?.tipo_unidad === 'TRACTOCAMION';
+    const listaUnidades = useMemo(() => {
+        if (!unidades) return data.unidad ? [data.unidad] : [];
+        const existe = unidades.some(u => u.id === data.unidad.id);
+        return existe ? unidades : [data.unidad, ...unidades]; 
+    }, [unidades, data.unidad]);
+
+    const listaCajas = useMemo(() => {
+        if (!cajas) return data.caja ? [data.caja] : [];
+        if (!data.caja) return cajas;
+        const existe = cajas.some(c => c.id === data.caja?.id);
+        return existe ? cajas : [data.caja, ...cajas];
+    }, [cajas, data.caja]);
+
+    const listaOperadores = useMemo(() => {
+        if (!operadores) return data.operador ? [data.operador] : [];
+        const existe = operadores.some(o => o.id === data.operador?.id);
+        return existe ? operadores : [data.operador, ...operadores];
+    }, [operadores, data.operador]);
 
     useEffect(() => {
-        if (selectedUnidad !== undefined && unidades && !isTractocamion) {
-            setValue('cajaId', null, { shouldValidate: true, shouldDirty: true });
-        }
-    }, [selectedUnidad, isTractocamion, unidades, setValue]);
+        const id = selectedUnidadId ? Number(selectedUnidadId) : data.unidadId;
+        const unidad = listaUnidades.find(u => u.id === id);
 
-    const { mutate, isPending } = useMutation({
+        if (unidad?.tipo_unidad === "MUDANCERO" || unidad?.tipo_unidad === "CAMIONETA") {
+            setCajaDisabled(true);
+            setValue('cajaId', null);
+        } else {
+            setCajaDisabled(false);
+        }
+    }, [selectedUnidadId, listaUnidades, data.unidadId, setValue]);
+
+        const { mutate, isPending } = useMutation({
         mutationFn: updateAsignacion,
         onError: (error) => toast.error(error.message),
-        onSuccess: (responseData, variables) => {
-            queryClient.invalidateQueries({ queryKey: ['editarAsignacion', asignacionId] });
+        onSuccess: (res) => {
             queryClient.invalidateQueries({ queryKey: ['asignaciones'] });
-            queryClient.invalidateQueries({ queryKey: ['Asignacion', asignacionId] });
+            queryClient.invalidateQueries({ queryKey: ['asignacion', asignacionId] });
+            queryClient.invalidateQueries({ queryKey: ['unidades'] });
+            queryClient.invalidateQueries({ queryKey: ['operadores'] });
+            queryClient.invalidateQueries({ queryKey: ['cajas'] });
 
-            toast.success(responseData || 'Asignación actualizada correctamente');
-
-            const nuevaUnidad = unidades?.find((u: UnidadBase) => u.id === +variables.formData.unidadId);
-            if (tipoUnidadOriginal && nuevaUnidad?.tipo_unidad && tipoUnidadOriginal !== nuevaUnidad.tipo_unidad) {
-                toast.info("El tipo de unidad cambió. Por favor, revise el checklist.", { autoClose: 6000 });
-                navigate(`/asignacion/${asignacionId}`);
-            } else {
-                navigate('/?page=1');
-            }
+            toast.success(res?.message || 'Asignación actualizada correctamente');
+            navigate('/');
         }
     });
 
-    const handleCajaExterna = (checked: boolean) => {
-        setCajaExterna(checked)
-        setValue("caja_externa", checked)
-        if(checked) setValue("cajaId", null)
-    }
+      const handleForm = (formData: AsignacionFormData) => {
+        const payload = {
+            ...formData,
+            cajaId: cajaDisabled || !formData.cajaId ? null : Number(formData.cajaId)
+        };
+        mutate({ formData: payload, asignacionId });
+    };
 
-    const handleForm = (formData: AsignacionFormData) => mutate({ formData, asignacionId });
-
+    if (loadingUnidades || loadingCajas || loadingOperadores) {
+    return (
+        <div className="py-20 text-center text-sm text-gray-400">
+            Cargando unidades disponibles...
+        </div>
+    );
+}
     return (
         <div className="max-w-xl mx-auto">
 
@@ -84,7 +99,7 @@ export default function EditarAsignacionForm({ data, asignacionId }: Props) {
             <div className="mb-6">
                 <div className="flex items-center gap-3 mb-4">
                     <Link
-                        to="/?page=1"
+                        to="/"
                         className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700 transition-colors no-underline"
                     >
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -101,7 +116,7 @@ export default function EditarAsignacionForm({ data, asignacionId }: Props) {
                     </div>
                     <div>
                         <h1 className="text-lg font-semibold text-gray-900">Editar asignación</h1>
-                        <p className="text-sm text-gray-500">Modifica la unidad, remolque u operador</p>
+                        <p className="text-sm text-gray-500">Corrige la unidad, operador o remolque de esta asignación</p>
                     </div>
                 </div>
             </div>
@@ -116,12 +131,10 @@ export default function EditarAsignacionForm({ data, asignacionId }: Props) {
                     <AsignacionForm
                         register={register}
                         errors={errors}
-                        unidades={unidades || []}
-                        cajas={cajas || []}
-                        operadores={operadores || []}
-                        cajaDisabled={!isTractocamion}
-                        cajaExterna={cajaExterna}
-                        onCajaExterna={handleCajaExterna}
+                        unidades={listaUnidades}
+                        cajas={listaCajas}
+                        operadores={listaOperadores}
+                        cajaDisabled={cajaDisabled}
                     />
 
                     <button
@@ -133,7 +146,7 @@ export default function EditarAsignacionForm({ data, asignacionId }: Props) {
                                 : 'bg-[#0f1f3d] hover:bg-[#1a3a6b]'
                         }`}
                     >
-                        {isPending ? 'Guardando...' : 'Guardar cambios'}
+                        {isPending ? 'Guardando cambios...' : 'Guardar cambios'}
                     </button>
                 </form>
             </div>

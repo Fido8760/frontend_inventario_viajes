@@ -1,32 +1,24 @@
-import { isAxiosError } from 'axios'
-import api from '../lib/axios' // ajusta el path a tu instancia de axios
-import {
-    asignacionesEnRutaSchema,
-    inspeccionKpisSchema,
-    kpisResumenSchema,
-    sinFotografiasSchema,
-    unidadesCriticasSchema,
-    type AsignacionesEnRuta,
-    type ChecklistSinFotos,
-    type InspeccionKpis,
-    type KpisResumen,
-} from '../types';
+import { isAxiosError } from 'axios';
+import api from '../lib/axios';
+import { RecorridosEnRuta, recorridosEnRutaSchema, sinFotografiasSchema, unidadesCriticasSchema, type ChecklistSinFotos } from '../types/dashboard';
 import { historialOperadorResponseSchema, historialUnidadResponseSchema } from '../views/admin/historial/types';
+import { KpisAuditoria, kpisAuditoriaSchema } from '../types/dashboard';
+import { inspeccionKpisSchema, type InspeccionKpis } from '../types/inspeccion';
 
-export async function getKpisResumen(): Promise<KpisResumen> {
+export async function getKpisResumen(): Promise<KpisAuditoria> {
     try {
-        const { data } = await api.get('/dashboard/kpis')
-        const result = kpisResumenSchema.safeParse(data)
+        const { data } = await api.get('/dashboard/kpis');
+        const result = kpisAuditoriaSchema.safeParse(data);
         if (!result.success) {
-            console.error('Zod error getKpisResumen:', result.error)
-            throw new Error('Respuesta del servidor inválida')
+            console.error('Zod error getKpisResumen:', JSON.stringify(result.error.format(), null, 2));
+            throw new Error('Respuesta del servidor inválida');
         }
-        return result.data
+        return result.data;
     } catch (error) {
         if (isAxiosError(error) && error.response) {
-            throw new Error(error.response.data.error)
+            throw new Error(error.response.data.error);
         }
-        throw new Error('Error al obtener los KPIs')
+        throw new Error('Error al obtener los KPIs');
     }
 }
 
@@ -83,10 +75,10 @@ export async function getKpisInspecciones(): Promise<InspeccionKpis> {
     }
 }
 
-export async function getAsignacionesEnRuta(): Promise<AsignacionesEnRuta> {
+export async function getAsignacionesEnRuta(): Promise<RecorridosEnRuta> {
     try {
         const { data } = await api.get('/dashboard/kpis/en-ruta')
-        const result = asignacionesEnRutaSchema.safeParse(data)
+        const result = recorridosEnRutaSchema.safeParse(data)
         if (!result.success) {
             console.error('Zod error getAsignacionesEnRuta:', result.error)
             throw new Error('Respuesta del servidor inválida')

@@ -4,7 +4,6 @@ import AuthLayout from './layouts/AuthLayout'
 import AppLayout from './layouts/AppLayout'
 import DashboardView from './views/admin/DashboardView'
 import EditarAsignacionView from './views/admin/asignacion/EditarAsignacionView'
-import ChecklistCreateView from './views/admin/checklist/ChecklistCreateView'
 import ChecklistImageUploadView from './views/admin/checklist/ChecklistImageUploadView'
 import UsersView from './views/auth/UsersView'
 import NotFound from './views/404/NotFound'
@@ -27,6 +26,7 @@ import InspeccionChecklistView from './views/admin/inspeccion/InspeccionChecklis
 import InspeccionFotosView from './views/admin/inspeccion/InspeccionFotosView'
 import InspeccionGalleryView from './views/admin/inspeccion/InspeccionGalleryView'
 import HistorialView from './views/admin/historial/HistorialView'
+import RecorridoView from './views/admin/recorrido/RecorridoView'
 
 
 export default function Router() {
@@ -39,7 +39,10 @@ export default function Router() {
                         <Route path='/asignacion/create' element={<CrearAsignacion />} />
                         <Route path='/asignacion/:asignacionId/edit' element={<EditarAsignacionView />} />
                         <Route path='/asignacion/:asignacionId' element={<AsignacionDetalleView />} />
-                        <Route path='/asignacion/:asignacionId/createChecklist' element={<ChecklistCreateView />} />
+                        <Route path='/asignacion/:asignacionId/recorridos/:recorridoId' element={<RecorridoView />} />
+                        <Route path='/asignacion/:asignacionId/recorridos/:recorridoId/checklist/:checklistId' element={<ChecklistLlenarView />} />
+                        <Route path='/asignacion/:asignacionId/recorridos/:recorridoId/checklist/:checklistId/uploadImages' element={<ChecklistImageUploadView />} />
+                        <Route path='/asignacion/:asignacionId/recorridos/:recorridoId/ver-fotos' element={<AsignacionGalleryView />} />
                         <Route path='/asignacion/:asignacionId/editChecklist/:checklistId' element={<ChecklistLlenarView />} />
                         <Route path='/asignacion/:asignacionId/createChecklist/:checklistId/uploadImages' element={<ChecklistImageUploadView />} />
                         <Route path='/asignacion/:asignacionId/ver-fotos' element={<AsignacionGalleryView />} />
@@ -57,7 +60,10 @@ export default function Router() {
                    
                    <Route element={<VigilanciaRoute />}>
                         <Route path='/vigilancia' element={<VigilanciaListView />} />
-                        <Route path='/vigilancia/:asignacionId' element={<VigilanciaEntradaView />} />
+                        <Route
+                            path='/vigilancia/:asignacionId/recorridos/:recorridoId/cierre-viaje'
+                            element={<VigilanciaEntradaView />}
+                        />
                     </Route>
                 </Route>
 

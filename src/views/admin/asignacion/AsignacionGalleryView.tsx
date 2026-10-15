@@ -4,7 +4,7 @@ import { getAsignacionById } from "../../../api/AsignacionAPI";
 import GaleriaFotos from "../../../components/admin/GaleriaFotos";
 
 export default function AsignacionGalleryView() {
-    const { asignacionId } = useParams();
+    const { asignacionId, recorridoId } = useParams();
 
     const { data, isLoading } = useQuery({
         queryKey: ['Asignacion', +asignacionId!],
@@ -17,11 +17,14 @@ export default function AsignacionGalleryView() {
         </div>
     );
 
+    const recorrido = recorridoId ? data?.recorridos.find(r => r.id === +recorridoId) : null;
+    const imagenes = recorrido ? (recorrido.checklist?.imagenes ?? []) : (data?.recorridos ?? []).flatMap((r: any) => r.checklist?.imagenes ?? []);
+
     return (
         <GaleriaFotos
-            imagenes={data?.checklist?.imagenes ?? []}
-            subtitulo={`Asignación #${asignacionId} · ${data?.checklist?.imagenes?.length ?? 0} imágenes`}
-            backTo={`/asignacion/${asignacionId}`}
+            imagenes={imagenes}
+            subtitulo={`Asignación #${asignacionId} · ${imagenes.length} imágenes`}
+            backTo={recorridoId ? `/asignacion/${asignacionId}/recorridos/${recorridoId}` : `/asignacion/${asignacionId}`}
         />
     );
 }

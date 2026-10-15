@@ -1,12 +1,14 @@
-import { OperadoresBase, UnidadesBase } from "../../../types"
+import { OperadoresList } from "../../../types/operador"
+import { UnidadesList } from "../../../types/unidad"
+
 
 type Modo = 'unidad' | 'operador'
 
 type HistorialSelectorProps = {
     modo: Modo
     onModoChange: (modo: Modo) => void
-    unidades: UnidadesBase
-    operadores: OperadoresBase
+    unidades: UnidadesList
+    operadores: OperadoresList
     unidadId: number | null
     operadorId: number | null
     onUnidadChange: (id: number | null) => void

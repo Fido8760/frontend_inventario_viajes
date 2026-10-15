@@ -23,7 +23,7 @@ export default function EditarAsignacionView() {
 
     if (data) return (
         <EditarAsignacionForm
-            data={data}
+            data={data.asignacion}
             asignacionId={asignacionId}
         />
     )

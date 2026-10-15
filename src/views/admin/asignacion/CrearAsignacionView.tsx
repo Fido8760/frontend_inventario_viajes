@@ -1,110 +1,98 @@
-import { Link, useNavigate } from "react-router-dom"
-import { useForm } from "react-hook-form"
-import { useEffect, useState } from "react"
-import { useMutation, useQuery } from "@tanstack/react-query"
-import { toast } from "react-toastify"
-import AsignacionForm from "../../../components/admin/AsignacionForm"
-import { AsignacionFormData } from "../../../types"
-import { crearAsignacion, getCajas, getContextoUnidad, getOperadores, getUnidades } from "../../../api/AsignacionAPI"
+import { Link, useNavigate } from "react-router-dom";
+import { useForm } from "react-hook-form";
+import { useEffect, useState } from "react";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { toast } from "react-toastify";
+import AsignacionForm from "../../../components/admin/asignacion/AsignacionForm";
+import { crearAsignacion, getCajas, getOperadores, getUnidades } from "../../../api/AsignacionAPI";
+import { AsignacionFormData } from "../../../types/asignacion";
 
 export default function CrearAsignacion() {
     const navigate = useNavigate();
-    const [cajaExterna, setCajaExterna] = useState(false);
-    const [entregaInicial, setEntregaInicial] = useState(false);
+    const queryClient = useQueryClient();
 
     const initialValues: AsignacionFormData = {
-        unidadId: 0,
-        cajaId: 0,
-        operadorId: 0,
-        caja_externa: false,
-        entregaInicial: false,
-    }
+        unidadId: '' as any,
+        operadorId: '' as any,
+        cajaId: '' as any,
+    };
 
-    const { data: unidades } = useQuery({ queryKey: ['unidades'],   queryFn: getUnidades })
-    const { data: cajas }    = useQuery({ queryKey: ['cajas'],      queryFn: getCajas })
-    const { data: operadores } = useQuery({ queryKey: ['operadores'], queryFn: getOperadores })
-
-    const { register, handleSubmit, formState: { errors }, watch, setValue } = useForm({
-        defaultValues: initialValues
-    })
-
-    const unidadIdSeleccionada = watch("unidadId");
-    const operadorIdSeleccionado = watch("operadorId");
-    const cajaIdSeleccionada = watch("cajaId") ?? 0;
-    const [cajaDisabled, setCajaDisabled] = useState(false);
-
-    useEffect(() => {
-        const unidad = unidades?.find(u => u.id === +unidadIdSeleccionada)
-        if (unidad?.tipo_unidad === "MUDANCERO" || unidad?.tipo_unidad === "CAMIONETA") {
-            setCajaDisabled(true)
-            setCajaExterna(false)
-            setValue("cajaId", 0)
-            setValue("caja_externa", false)
-        } else {
-            setCajaDisabled(false)
-        }
-    }, [unidadIdSeleccionada, unidades, setValue]);
-
-    const tieneUnidadYOperador = +unidadIdSeleccionada > 0 && +operadorIdSeleccionado > 0;
-
-    const { data: contexto } = useQuery({
-        queryKey: ['contexto-unidad', +unidadIdSeleccionada, operadorIdSeleccionado, +cajaIdSeleccionada],
-        queryFn: () => getContextoUnidad({
-            unidadId: +unidadIdSeleccionada,
-            operadorId: +operadorIdSeleccionado,
-            cajaId: cajaDisabled ? null : +cajaIdSeleccionada || null
-        }),
-        enabled: tieneUnidadYOperador
+    // Catálogos: ahora traen solo los 100% disponibles
+    const { data: unidades, isLoading: loadingUnidades } = useQuery({ 
+        queryKey: ['unidades', 'disponibles'], 
+        queryFn: () => getUnidades(true) 
+    });
+    const { data: cajas, isLoading: loadingCajas } = useQuery({ 
+        queryKey: ['cajas', 'disponibles'], 
+        queryFn: () => getCajas(true) 
+    });
+    const { data: operadores, isLoading: loadingOperadores } = useQuery({ 
+        queryKey: ['operadores', 'disponibles'], 
+        queryFn: () => getOperadores(true) 
     });
 
-    useEffect(() => {
-        if (contexto) {
-            setEntregaInicial(contexto.sugerirEntregaInicial);
-            setValue("entregaInicial", contexto.sugerirEntregaInicial)
-        } else {
-            setEntregaInicial(false);
-            setValue("entregaInicial", false)
-        }
-    }, [contexto, setValue]);
+    const { register, handleSubmit, formState: { errors }, watch, setValue } = useForm<AsignacionFormData>({
+        defaultValues: initialValues
+    });
 
-    const handleEntregaInicial = (checked: boolean) => {
-        setEntregaInicial(checked);
-        setValue("entregaInicial", checked)
-    }
+    const unidadIdSeleccionada = watch("unidadId");
+    const [cajaDisabled, setCajaDisabled] = useState(false);
+
+    // 🔒 Deshabilitar remolque si la unidad seleccionada es Mudancero o Camioneta
+    useEffect(() => {
+        if (!unidadIdSeleccionada || !unidades) return;
+
+        const unidad = unidades.find(u => u.id === Number(unidadIdSeleccionada));
+        if (unidad?.tipo_unidad === "MUDANCERO" || unidad?.tipo_unidad === "CAMIONETA") {
+            setCajaDisabled(true);
+            setValue("cajaId", null);
+        } else {
+            setCajaDisabled(false);
+        }
+    }, [unidadIdSeleccionada, unidades, setValue]);
 
     const { mutate, isPending } = useMutation({
         mutationFn: crearAsignacion,
         onError: (error) => toast.error(error.message),
         onSuccess: (data) => {
             if (data) {
-                toast.success(data.message)
-                navigate(`/asignacion/${data.id}/createChecklist`, { replace: true })
+                toast.success(data.message);
+                // Invalidamos para que la lista principal se actualice
+                queryClient.invalidateQueries({ queryKey: ["asignaciones"] });
+                queryClient.invalidateQueries({ queryKey: ["unidades"] });
+                queryClient.invalidateQueries({ queryKey: ["operadores"] });
+                queryClient.invalidateQueries({ queryKey: ["cajas"] });
+
+                // Redirigir al detalle de la asignación creada
+                navigate(`/asignacion/${data.id}`, { replace: true });
             }
         }
-    })
+    });
 
-    const handleCajaExterna = (checked: boolean) => {
-        setCajaExterna(checked)
-        setValue("caja_externa", checked)
-        if(checked) setValue("cajaId", null)
-    }
+    const handleForm = (formData: AsignacionFormData) => {
+        // Aseguramos que si es mudancero o camioneta, cajaId viaje en null
+        const payload = {
+            ...formData,
+            cajaId: cajaDisabled || !formData.cajaId ? null : Number(formData.cajaId)
+        };
+        mutate(payload);
+    };
 
-    const handleForm = (formData: AsignacionFormData) => mutate(formData)
+    const isLoadingCatalogs = loadingUnidades || loadingCajas || loadingOperadores;
 
     return (
         <div className="max-w-xl mx-auto">
-
             {/* Header */}
             <div className="mb-6">
                 <div className="flex items-center gap-3 mb-4">
                     <Link
-                        to="/?page=1"
+                        to="/"
                         className="flex items-center gap-1.5 text-sm text-gray-500 hover:text-gray-700 transition-colors no-underline"
                     >
                         <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
                         </svg>
-                        Volver
+                        Volver a asignaciones
                     </Link>
                 </div>
                 <div className="flex items-center gap-3">
@@ -113,66 +101,46 @@ export default function CrearAsignacion() {
                     </div>
                     <div>
                         <h1 className="text-lg font-semibold text-gray-900">Nueva asignación</h1>
-                        <p className="text-sm text-gray-500">Selecciona la unidad, remolque y operador</p>
+                        <p className="text-sm text-gray-500">Selecciona la unidad, operador y remolque disponibles</p>
                     </div>
                 </div>
             </div>
 
             {/* Formulario */}
             <div className="bg-white rounded-xl border border-gray-100 shadow-sm overflow-hidden">
-                <form
-                    onSubmit={handleSubmit(handleForm)}
-                    noValidate
-                    className="p-6"
-                >
-                    <AsignacionForm
-                        register={register}
-                        errors={errors}
-                        unidades={unidades || []}
-                        cajas={cajas || []}
-                        operadores={operadores || []}
-                        cajaDisabled={cajaDisabled}
-                        cajaExterna={cajaExterna}
-                        onCajaExterna={handleCajaExterna}
-                    />
-                    {contexto?.sugerirEntregaInicial && (
-                        <div className="mt-5 p-3 bg-blue-50 border border-blue-100 rounded-lg">
-                            <label className="flex items-start gap-2 text-sm text-blue-900 cursor-pointer">
-                                <input 
-                                    type="checkbox"
-                                    checked={entregaInicial}
-                                    onChange={e => handleEntregaInicial(e.target.checked)}
-                                    className="w-4 h-4 mt-0.5 accent-[#0f1f3d]"
-                                />
-                                 <span>
-                                    {contexto.operadorAnterior
-                                        ? <>Esta unidad la traía <strong>{contexto.operadorAnterior.nombre}</strong>. Marca esta casilla si es una entrega inicial a este operador.</>
-                                        : 'Marca esta casilla si es una entrega inicial a este operador.'}
-                                </span>
-                            </label>
-
-                        </div>
-                    )}
-
-                    {contexto?.cambioDeRemolque && !contexto.sugerirEntregaInicial && (
-                        <div className="mt-5 p-3 bg-amber-50 border border-amber-100 rounded-lg text-sm text-amber-800">
-                            El remolque cambió respecto al último viaje de este operador con esta unidad.
-                        </div>
-                    )}
-
-                    <button
-                        type="submit"
-                        disabled={isPending}
-                        className={`w-full mt-6 py-2.5 px-4 text-sm font-medium text-white rounded-lg transition-colors ${
-                            isPending
-                                ? 'bg-gray-400 cursor-not-allowed'
-                                : 'bg-[#0f1f3d] hover:bg-[#1a3a6b]'
-                        }`}
+                {isLoadingCatalogs ? (
+                    <div className="py-20 text-center text-sm text-gray-400">
+                        Cargando catálogos disponibles...
+                    </div>
+                ) : (
+                    <form
+                        onSubmit={handleSubmit(handleForm)}
+                        noValidate
+                        className="p-6"
                     >
-                        {isPending ? 'Creando...' : 'Crear asignación'}
-                    </button>
-                </form>
+                        <AsignacionForm
+                            register={register}
+                            errors={errors}
+                            unidades={unidades || []}
+                            cajas={cajas || []}
+                            operadores={operadores || []}
+                            cajaDisabled={cajaDisabled}
+                        />
+
+                        <button
+                            type="submit"
+                            disabled={isPending}
+                            className={`w-full mt-6 py-2.5 px-4 text-sm font-medium text-white rounded-lg transition-colors ${
+                                isPending
+                                    ? 'bg-gray-400 cursor-not-allowed'
+                                    : 'bg-[#0f1f3d] hover:bg-[#1a3a6b]'
+                            }`}
+                        >
+                            {isPending ? 'Creando asignación...' : 'Crear asignación'}
+                        </button>
+                    </form>
+                )}
             </div>
         </div>
-    )
+    );
 }

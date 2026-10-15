@@ -1,733 +1,430 @@
-import { BarChart, Bar, XAxis, YAxis, Tooltip, ResponsiveContainer, Cell } from 'recharts'
-import { formatDate } from '../../../utils/formatDate'
-import { AsignacionEnRutaItem, ChecklistSinFotos, CompletitudPorTipo, InspeccionKpis, UnidadCritica } from '../../../types'
-import {
-    useAsignacionesEnRuta,
-    useKpisInspecciones,
-    useKpisResumen,
-    useSinFotografias,
-    useUnidadesCriticas
-} from '../../../hooks/useDashboard'
-import { useState } from 'react'
+import { useMemo, useState } from "react";
+import type { ReactNode } from "react";
+import { Link } from "react-router-dom";
+import { Bar, BarChart, CartesianGrid, Cell, Pie, PieChart, ResponsiveContainer, Tooltip, XAxis, YAxis, } from "recharts";
+import { ArrowPathIcon, CameraIcon, ChartBarIcon, ChevronLeftIcon, ChevronRightIcon, ClipboardDocumentCheckIcon, ExclamationTriangleIcon, TruckIcon, } from "@heroicons/react/24/outline";
+import MetricCard from "../../../components/dashboard/MetricCard";
+import { useKpisResumen } from "../../../hooks/useDashboard";
+import { formatDate } from "../../../utils/formatDate";
+import type { ViajeAtascado } from "../../../types/dashboard";
 
+const PAGE_SIZE = 10;
+const COLORS = ["#0f1f3d", "#b91c1c", "#2563eb", "#f59e0b"];
 
-// ─── Helpers ─────────────────────────────────────────────────────────────────
+export default function KpiDashboardView() {
+    const { data: kpis, isLoading: loadingKpis, isError, refetch, isFetching } = useKpisResumen();
+    const [atascadosPage, setAtascadosPage] = useState(1);
+    const [rankingPage, setRankingPage] = useState(1);
+    const [unidadesPage, setUnidadesPage] = useState(1);
+    const [cajasPage, setCajasPage] = useState(1);
+
+    const flota = kpis?.coberturaFlota;
+    const puntosCiegos = kpis?.puntosCiegos;
+    const atascados = kpis?.checklistsAtascados;
+    const ranking = kpis?.rankingMenorAtencion ?? [];
+    const unidadesSinChecklist = puntosCiegos?.unidadesSinChecklist ?? [];
+    const cajasSinChecklist = puntosCiegos?.cajasSinChecklist ?? [];
+
+    const flotaChartData = useMemo(() => ([
+        { name: "Asignadas", value: flota?.asignadas ?? 0 },
+        { name: "En patio", value: flota?.sinAsignar ?? 0 },
+    ]), [flota]);
+
+    const completitudData = useMemo(() => (
+        (kpis?.completitudPorTipo ?? []).map(item => ({
+            ...item,
+            tipo: tipoLabel(item.tipo),
+        }))
+    ), [kpis]);
+
+    const resumenRiesgo = useMemo(() => {
+        const totalPuntosCiegos = (puntosCiegos?.totalUnidadesSinChecklist ?? 0) + (puntosCiegos?.totalCajasSinChecklist ?? 0);
+        const totalAtascados = atascados?.total ?? 0;
+        return totalPuntosCiegos + totalAtascados;
+    }, [atascados, puntosCiegos]);
+
+    return (
+        <div className="max-w-7xl mx-auto space-y-6 pb-16">
+            <div className="flex flex-wrap items-start justify-between gap-4">
+                <div>
+                    <p className="text-xs font-bold text-red-700 uppercase tracking-wider mb-1">KPIs operativos</p>
+                    <h1 className="text-2xl font-bold text-gray-900">Auditoría de flota y revisiones</h1>
+                    <p className="text-sm text-gray-500 mt-0.5">Una vista rápida para detectar pendientes, priorizar unidades y cerrar revisiones.</p>
+                </div>
+                <button
+                    type="button"
+                    onClick={() => refetch()}
+                    className="inline-flex items-center gap-2 rounded-lg border border-gray-200 bg-white px-3 py-2 text-sm font-medium text-gray-700 hover:bg-gray-50"
+                >
+                    <ArrowPathIcon className={`h-4 w-4 ${isFetching ? "animate-spin" : ""}`} />
+                    Actualizar
+                </button>
+            </div>
+
+            {isError && (
+                <div className="rounded-lg border border-red-200 bg-red-50 px-4 py-3 text-sm text-red-700">
+                    No se pudieron cargar los KPIs. Intenta actualizar el tablero.
+                </div>
+            )}
+
+            <section className="grid grid-cols-2 lg:grid-cols-5 gap-4">
+                <MetricCard label="Flota total" value={flota?.totalUnidades} loading={loadingKpis} sub="Unidades activas" />
+                <MetricCard label="Asignadas" value={flota?.asignadas} accent="ok" loading={loadingKpis} sub={`${flota?.porcentajeAsignadas ?? 0}% de la flota`} />
+                <MetricCard label="En patio" value={flota?.sinAsignar} accent="warn" sub="Disponibles sin operador" loading={loadingKpis} />
+                <MetricCard label="En carretera" value={flota?.enRuta} accent="info" sub="Viajes actualmente en ruta" loading={loadingKpis} />
+                <MetricCard label="Alertas abiertas" value={resumenRiesgo} accent="danger" sub="Puntos ciegos + atascados" loading={loadingKpis} />
+            </section>
+
+            <section className="grid grid-cols-1 xl:grid-cols-3 gap-4">
+                <div className="xl:col-span-1 rounded-xl border border-gray-100 bg-white p-5 shadow-sm">
+                    <div className="flex items-center justify-between mb-4">
+                        <div>
+                            <h2 className="text-sm font-bold text-gray-900">Cobertura de flota</h2>
+                            <p className="text-xs text-gray-400">Asignadas contra unidades en patio</p>
+                        </div>
+                        <TruckIcon className="h-5 w-5 text-[#0f1f3d]" />
+                    </div>
+                    {loadingKpis ? (
+                        <ChartSkeleton />
+                    ) : (
+                        <div className="h-64">
+                            <ResponsiveContainer width="100%" height="100%">
+                                <PieChart>
+                                    <Pie data={flotaChartData} dataKey="value" nameKey="name" innerRadius={58} outerRadius={88} paddingAngle={3}>
+                                        {flotaChartData.map((_, index) => (
+                                            <Cell key={index} fill={COLORS[index % COLORS.length]} />
+                                        ))}
+                                    </Pie>
+                                    <Tooltip formatter={(value) => [`${Number(value ?? 0)} unidades`, "Total"]} />
+                                </PieChart>
+                            </ResponsiveContainer>
+                        </div>
+                    )}
+                    <div className="grid grid-cols-2 gap-2 text-xs">
+                        <LegendDot color="#0f1f3d" label="Asignadas" value={flota?.asignadas ?? 0} />
+                        <LegendDot color="#b91c1c" label="En patio" value={flota?.sinAsignar ?? 0} />
+                    </div>
+                </div>
+
+                <div className="xl:col-span-2 rounded-xl border border-gray-100 bg-white p-5 shadow-sm">
+                    <div className="flex items-center justify-between mb-4">
+                        <div>
+                            <h2 className="text-sm font-bold text-gray-900">Cobertura de revisiones por tipo</h2>
+                            <p className="text-xs text-gray-400">Porcentaje de unidades que ya tienen al menos una revisión registrada</p>
+                        </div>
+                        <ChartBarIcon className="h-5 w-5 text-[#0f1f3d]" />
+                    </div>
+                    {loadingKpis ? (
+                        <ChartSkeleton />
+                    ) : completitudData.length ? (
+                        <div className="h-64">
+                            <ResponsiveContainer width="100%" height="100%">
+                                <BarChart data={completitudData} margin={{ top: 8, right: 12, left: -20, bottom: 0 }}>
+                                    <CartesianGrid vertical={false} stroke="#f1f5f9" />
+                                    <XAxis dataKey="tipo" tickLine={false} axisLine={false} tick={{ fontSize: 12, fill: "#64748b" }} />
+                                    <YAxis tickLine={false} axisLine={false} tick={{ fontSize: 12, fill: "#64748b" }} domain={[0, 100]} />
+                                    <Tooltip formatter={(value) => [`${Number(value ?? 0)}%`, "Cobertura"]} />
+                                    <Bar dataKey="porcentaje" radius={[6, 6, 0, 0]} fill="#0f1f3d" />
+                                </BarChart>
+                            </ResponsiveContainer>
+                        </div>
+                    ) : (
+                        <EmptyState text="Sin datos suficientes para graficar cobertura." />
+                    )}
+                </div>
+            </section>
+
+            <section className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <MetricCard label="Camiones jamás revisados" value={puntosCiegos?.totalUnidadesSinChecklist} accent="danger" sub="Unidades con 0 revisiones" loading={loadingKpis} />
+                <MetricCard label="Remolques jamás revisados" value={puntosCiegos?.totalCajasSinChecklist} accent="danger" sub="Cajas sin revisión física registrada" loading={loadingKpis} />
+                <MetricCard label="Checklists inconclusos" value={atascados?.total} accent="warn" sub="Viajes iniciados y pendientes de cierre" loading={loadingKpis} />
+            </section>
+
+            <KpiTable
+                title="Inspecciones atascadas"
+                subtitle="Viajes que necesitan continuar checklist o subir fotos"
+                count={atascados?.total ?? 0}
+                icon={<ExclamationTriangleIcon className="h-5 w-5 text-amber-600" />}
+                loading={loadingKpis}
+                data={atascados?.viajes ?? []}
+                page={atascadosPage}
+                onPageChange={setAtascadosPage}
+                emptyText="No hay checklists atascados. Todos los viajes en curso están al día."
+                columns={["Unidad", "Operador", "Estado", "Capturista", "Inicio", "Acción"]}
+                renderRow={(v) => (
+                    <tr key={v.id} className="hover:bg-gray-50/70 transition-colors">
+                        <td className="px-6 py-3.5 font-bold text-gray-900">Unidad {v.no_unidad}</td>
+                        <td className="px-6 py-3.5 text-gray-700">{v.operador}</td>
+                        <td className="px-6 py-3.5"><StatusPill status={v.status} /></td>
+                        <td className="px-6 py-3.5 text-gray-500">{v.capturista}</td>
+                        <td className="px-6 py-3.5 text-gray-400">{formatDate(v.createdAt)}</td>
+                        <td className="px-6 py-3.5 text-right">
+                            <Link to={resolverPath(v)} className="font-semibold text-[#0f1f3d] hover:underline">
+                                Resolver
+                            </Link>
+                        </td>
+                    </tr>
+                )}
+            />
+
+            <KpiTable
+                title="Prioridad preventiva"
+                subtitle="Unidades con menor cantidad de revisiones acumuladas"
+                count={ranking.length}
+                icon={<ClipboardDocumentCheckIcon className="h-5 w-5 text-[#0f1f3d]" />}
+                loading={loadingKpis}
+                data={ranking}
+                page={rankingPage}
+                onPageChange={setRankingPage}
+                emptyText="Sin datos de unidades."
+                columns={["Unidad", "Tipo", "Placas", "Estado actual", "En viajes", "En patio", "Total"]}
+                renderRow={(u) => (
+                    <tr key={u.id} className="hover:bg-gray-50/70 transition-colors">
+                        <td className="px-6 py-3.5 font-bold text-gray-900">Unidad {u.no_unidad}</td>
+                        <td className="px-6 py-3.5 text-gray-500">{tipoLabel(u.tipo_unidad)}</td>
+                        <td className="px-6 py-3.5 text-gray-400 font-mono">{u.u_placas}</td>
+                        <td className="px-6 py-3.5">
+                            <span className={`px-2 py-0.5 rounded-full font-medium ${u.estaAsignada ? "bg-emerald-50 text-emerald-700" : "bg-gray-100 text-gray-600"}`}>
+                                {u.estaAsignada ? "Asignada" : "En patio"}
+                            </span>
+                        </td>
+                        <td className="px-6 py-3.5 text-center text-gray-600 font-semibold">{u.revViajes}</td>
+                        <td className="px-6 py-3.5 text-center text-gray-600 font-semibold">{u.revPatio}</td>
+                        <td className="px-6 py-3.5 text-right font-bold"><RevisionBadge total={u.totalRevisiones} /></td>
+                    </tr>
+                )}
+            />
+
+            <section className="grid grid-cols-1 xl:grid-cols-2 gap-4">
+                <KpiTable
+                    title="Camiones punto ciego"
+                    subtitle="Unidades activas sin revisiones registradas"
+                    count={unidadesSinChecklist.length}
+                    icon={<TruckIcon className="h-5 w-5 text-red-600" />}
+                    loading={loadingKpis}
+                    data={unidadesSinChecklist}
+                    page={unidadesPage}
+                    onPageChange={setUnidadesPage}
+                    emptyText="No hay camiones sin revisión."
+                    columns={["Unidad", "Tipo", "Placas", "Estado"]}
+                    renderRow={(u) => (
+                        <tr key={u.id} className="hover:bg-gray-50/70 transition-colors">
+                            <td className="px-6 py-3.5 font-bold text-gray-900">Unidad {u.no_unidad}</td>
+                            <td className="px-6 py-3.5 text-gray-500">{tipoLabel(u.tipo_unidad)}</td>
+                            <td className="px-6 py-3.5 text-gray-400 font-mono">{u.u_placas}</td>
+                            <td className="px-6 py-3.5">
+                                <span className={`px-2 py-0.5 rounded-full font-medium ${u.estaAsignada ? "bg-emerald-50 text-emerald-700" : "bg-gray-100 text-gray-600"}`}>
+                                    {u.estaAsignada ? "Asignada" : "En patio"}
+                                </span>
+                            </td>
+                        </tr>
+                    )}
+                />
+
+                <KpiTable
+                    title="Remolques punto ciego"
+                    subtitle="Cajas activas sin inspección física registrada"
+                    count={cajasSinChecklist.length}
+                    icon={<CameraIcon className="h-5 w-5 text-red-600" />}
+                    loading={loadingKpis}
+                    data={cajasSinChecklist}
+                    page={cajasPage}
+                    onPageChange={setCajasPage}
+                    emptyText="No hay remolques sin revisión."
+                    columns={["Caja", "Placas", "Marca"]}
+                    renderRow={(c) => (
+                        <tr key={c.id} className="hover:bg-gray-50/70 transition-colors">
+                            <td className="px-6 py-3.5 font-bold text-gray-900">Caja {c.numero_caja}</td>
+                            <td className="px-6 py-3.5 text-gray-400 font-mono">{c.c_placas}</td>
+                            <td className="px-6 py-3.5 text-gray-500">{c.c_marca ?? "Sin marca"}</td>
+                        </tr>
+                    )}
+                />
+            </section>
+        </div>
+    );
+}
+
+function KpiTable<T>({
+    title,
+    subtitle,
+    count,
+    icon,
+    loading,
+    data,
+    page,
+    onPageChange,
+    emptyText,
+    columns,
+    renderRow,
+}: {
+    title: string;
+    subtitle: string;
+    count: number;
+    icon: ReactNode;
+    loading: boolean;
+    data: T[];
+    page: number;
+    onPageChange: (page: number) => void;
+    emptyText: string;
+    columns: string[];
+    renderRow: (item: T) => ReactNode;
+}) {
+    const totalPages = Math.max(1, Math.ceil(data.length / PAGE_SIZE));
+    const currentPage = Math.min(page, totalPages);
+    const visibleRows = data.slice((currentPage - 1) * PAGE_SIZE, currentPage * PAGE_SIZE);
+
+    return (
+        <div className="bg-white rounded-xl border border-gray-100 overflow-hidden shadow-sm">
+            <div className="px-6 py-4 border-b border-gray-100 flex flex-wrap items-center justify-between gap-3">
+                <div className="flex items-start gap-3">
+                    <div className="mt-0.5 rounded-lg bg-gray-50 p-2">{icon}</div>
+                    <div>
+                        <h3 className="text-sm font-bold text-gray-900">{title}</h3>
+                        <p className="text-xs text-gray-400 mt-0.5">{subtitle}</p>
+                    </div>
+                </div>
+                <span className="text-xs font-bold bg-gray-100 text-gray-600 px-2.5 py-1 rounded-full">
+                    {count} registros
+                </span>
+            </div>
+
+            {loading ? (
+                <div className="py-12 text-center text-xs text-gray-400">Cargando datos...</div>
+            ) : !data.length ? (
+                <EmptyState text={emptyText} />
+            ) : (
+                <>
+                    <div className="overflow-x-auto">
+                        <table className="w-full text-xs text-left">
+                            <thead className="bg-gray-50/70 text-gray-400 uppercase font-semibold">
+                                <tr>
+                                    {columns.map((column, index) => (
+                                        <th key={column} className={`px-6 py-3 ${index === columns.length - 1 ? "text-right" : ""}`}>
+                                            {column}
+                                        </th>
+                                    ))}
+                                </tr>
+                            </thead>
+                            <tbody className="divide-y divide-gray-100">
+                                {visibleRows.map(renderRow)}
+                            </tbody>
+                        </table>
+                    </div>
+                    {data.length > PAGE_SIZE && (
+                        <LocalPagination page={currentPage} totalPages={totalPages} onPageChange={onPageChange} total={data.length} />
+                    )}
+                </>
+            )}
+        </div>
+    );
+}
+
+function LocalPagination({ page, totalPages, total, onPageChange }: {
+    page: number;
+    totalPages: number;
+    total: number;
+    onPageChange: (page: number) => void;
+}) {
+    const start = (page - 1) * PAGE_SIZE + 1;
+    const end = Math.min(page * PAGE_SIZE, total);
+
+    return (
+        <div className="flex flex-wrap items-center justify-between gap-3 border-t border-gray-100 px-6 py-3 text-xs text-gray-500">
+            <span>Mostrando {start}-{end} de {total}</span>
+            <div className="flex items-center gap-2">
+                <button
+                    type="button"
+                    disabled={page === 1}
+                    onClick={() => onPageChange(page - 1)}
+                    className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-gray-200 text-gray-600 disabled:opacity-40"
+                    aria-label="Página anterior"
+                >
+                    <ChevronLeftIcon className="h-4 w-4" />
+                </button>
+                <span className="font-medium text-gray-700">Página {page} de {totalPages}</span>
+                <button
+                    type="button"
+                    disabled={page === totalPages}
+                    onClick={() => onPageChange(page + 1)}
+                    className="inline-flex h-8 w-8 items-center justify-center rounded-md border border-gray-200 text-gray-600 disabled:opacity-40"
+                    aria-label="Página siguiente"
+                >
+                    <ChevronRightIcon className="h-4 w-4" />
+                </button>
+            </div>
+        </div>
+    );
+}
+
+function StatusPill({ status }: { status: string }) {
+    const map: Record<string, { label: string; cls: string }> = {
+        CREADA: { label: "Sin iniciar", cls: "bg-gray-100 text-gray-700" },
+        CHECKLIST_PENDIENTE: { label: "En preguntas", cls: "bg-blue-50 text-blue-700" },
+        FOTOS_PENDIENTES: { label: "Faltan fotos", cls: "bg-amber-50 text-amber-700" },
+    };
+    const item = map[status] ?? { label: status, cls: "bg-gray-100 text-gray-600" };
+    return <span className={`px-2 py-0.5 rounded-full font-medium ${item.cls}`}>{item.label}</span>;
+}
+
+function RevisionBadge({ total }: { total: number }) {
+    const cls = total === 0
+        ? "bg-red-100 text-red-700"
+        : total <= 2
+            ? "bg-amber-100 text-amber-800"
+            : "bg-gray-100 text-gray-800";
+
+    return (
+        <span className={`px-2 py-0.5 rounded-md ${cls}`}>
+            {total} {total === 1 ? "revisión" : "revisiones"}
+        </span>
+    );
+}
+
+function ChartSkeleton() {
+    return <div className="h-64 animate-pulse rounded-lg bg-gray-100" />;
+}
+
+function EmptyState({ text }: { text: string }) {
+    return (
+        <div className="py-12 text-center text-xs text-gray-400">
+            {text}
+        </div>
+    );
+}
+
+function LegendDot({ color, label, value }: { color: string; label: string; value: number }) {
+    return (
+        <div className="flex items-center justify-between rounded-lg bg-gray-50 px-3 py-2">
+            <span className="flex items-center gap-2 text-gray-500">
+                <span className="h-2.5 w-2.5 rounded-full" style={{ backgroundColor: color }} />
+                {label}
+            </span>
+            <span className="font-bold text-gray-800">{value}</span>
+        </div>
+    );
+}
+
+function resolverPath(viaje: ViajeAtascado) {
+    if (viaje.status === "FOTOS_PENDIENTES" && viaje.checklistId) {
+        return `/asignacion/${viaje.asignacionId}/recorridos/${viaje.id}/checklist/${viaje.checklistId}/uploadImages`;
+    }
+
+    if (viaje.checklistId) {
+        return `/asignacion/${viaje.asignacionId}/recorridos/${viaje.id}/checklist/${viaje.checklistId}`;
+    }
+
+    return `/asignacion/${viaje.asignacionId}/recorridos/${viaje.id}`;
+}
 
 function tipoLabel(tipo: string) {
     const map: Record<string, string> = {
-        tractocamion: 'Tractocamión',
-        mudancero:    'Mudancero',
-        camioneta:    'Camioneta',
-    }
-    return map[tipo] ?? tipo
-}
-
-function motivoLabel(motivo: UnidadCritica['motivo']) {
-    return motivo === 'sin_checklist' ? 'Sin revisión' : '+30 días'
-}
-
-function origenRevisionLabel(origen?: UnidadCritica['origenUltimaRevision']) {
-    if (origen === 'asignacion') return 'Asignación'
-    if (origen === 'inspeccion') return 'Inspección'
-    return '-'
-}
-
-function diasDesde(fecha: string | Date): string {
-    const dias = Math.floor((Date.now() - new Date(fecha).getTime()) / (1000 * 60 * 60 * 24))
-    if (dias === 0 ) return 'Hoy'
-    if(dias === 1) return 'Ayer'
-    return `Hace ${dias} días`
-}
-
-function estadoRevisionBadge(estado: string | null | undefined) {
-    if (!estado) return null
-    const map: Record<string, { label: string; cls: string }> = {
-        completa:   { label: 'Completa',   cls: 'bg-green-50 text-green-700' },
-        sin_fotos:  { label: 'Sin fotos',  cls: 'bg-red-50 text-red-600' },
-        en_progreso:{ label: 'En progreso',cls: 'bg-amber-50 text-amber-700' },
-        pendiente:  { label: 'Pendiente',  cls: 'bg-gray-100 text-gray-600' },
-    }
-    const entry = map[estado] ?? { label: estado, cls: 'bg-gray-100 text-gray-500' }
-    return (
-        <span className={`text-xs font-medium px-2 py-0.5 rounded-full ${entry.cls}`}>
-            {entry.label}
-        </span>
-    )
-}
-
-// ─── Skeleton ────────────────────────────────────────────────────────────────
-
-function Skeleton({ className }: { className?: string }) {
-    return <div className={`animate-pulse bg-gray-200 rounded-lg ${className}`} />
-}
-
-function inspeccionTipoLabel(tipo: string) {
-    const map: Record<string, string> = {
-        UNIDAD:   'Unidad',
-        REMOLQUE: 'Remolque',
-    }
-    return map[tipo] ?? tipo
-}
-
-function operadorNombre(operador: AsignacionEnRutaItem['operador']) {
-    if (!operador) return 'Sin operador'
-    return [operador.nombre, operador.apellido_p, operador.apellido_m].filter(Boolean).join(' ')
-}
-
-// ─── Metric card ─────────────────────────────────────────────────────────────
-
-type MetricCardProps = {
-    label:    string
-    value:    number | undefined
-    sub?:     string
-    accent?:  'default' | 'danger' | 'warn' | 'ok' | 'info'
-    loading?: boolean
-}
-
-const accentMap = {
-    default: 'text-gray-900',
-    danger:  'text-red-600',
-    warn:    'text-amber-600',
-    ok:      'text-green-700',
-    info:    'text-blue-700',
-}
-
-function MetricCard({ label, value, sub, accent = 'default', loading }: MetricCardProps) {
-    return (
-        <div className="bg-white rounded-xl border border-gray-100 p-5">
-            <p className="text-xs text-gray-400 font-medium uppercase tracking-wide mb-2">{label}</p>
-            {loading
-                ? <Skeleton className="h-8 w-16 mb-1" />
-                : <p className={`text-3xl font-semibold ${accentMap[accent]}`}>{value ?? '—'}</p>
-            }
-            {sub && <p className="text-xs text-gray-400 mt-1">{sub}</p>}
-        </div>
-    )
-}
-
-// ─── Bar chart card ───────────────────────────────────────────────────────────
-
-const barColors: Record<string, string> = {
-    tractocamion: '#0f1f3d',
-    mudancero:    '#2563eb',
-    camioneta:    '#93c5fd',
-}
-
-function CompletitudChart({ data, cajas, loading }: {
-    data?:  CompletitudPorTipo[]
-    cajas?: { total: number; conInspeccion: number; porcentaje: number }
-    loading: boolean
-}) {
-    return (
-        <div className="bg-white rounded-xl border border-gray-100 p-5">
-            <p className="text-xs text-gray-400 font-medium uppercase tracking-wide mb-4">
-                Cobertura de revisiones por tipo
-            </p>
-            {loading ? (
-                <div className="space-y-3">
-                    <Skeleton className="h-5 w-full" />
-                    <Skeleton className="h-5 w-3/4" />
-                    <Skeleton className="h-5 w-1/2" />
-                    <Skeleton className="h-5 w-2/3" />
-                </div>
-            ) : (
-                <div className="space-y-4">
-                    {data?.map((item) => (
-                        <div key={item.tipo}>
-                            <div className="flex justify-between items-center mb-1.5">
-                                <span className="text-sm text-gray-700">{tipoLabel(item.tipo)}</span>
-                                <span className="text-sm font-medium text-gray-900">{item.porcentaje}%</span>
-                            </div>
-                            <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
-                                <div
-                                    className="h-full rounded-full transition-all duration-700"
-                                    style={{
-                                        width:      `${item.porcentaje}%`,
-                                        background: barColors[item.tipo] ?? '#0f1f3d'
-                                    }}
-                                />
-                            </div>
-                            <p className="text-xs text-gray-400 mt-1">
-                                {item.completos} de {item.total} unidades
-                            </p>
-                        </div>
-                    ))}
-
-                    {/* ── Cajas ── */}
-                    {cajas && (
-                        <div>
-                            <div className="flex justify-between items-center mb-1.5">
-                                <span className="text-sm text-gray-700">Remolques</span>
-                                <span className="text-sm font-medium text-gray-900">{cajas.porcentaje}%</span>
-                            </div>
-                            <div className="h-2 bg-gray-100 rounded-full overflow-hidden">
-                                <div
-                                    className="h-full rounded-full transition-all duration-700"
-                                    style={{ width: `${cajas.porcentaje}%`, background: '#7c3aed' }}
-                                />
-                            </div>
-                            <p className="text-xs text-gray-400 mt-1">
-                                {cajas.conInspeccion} de {cajas.total} remolques con inspección
-                            </p>
-                        </div>
-                    )}
-                </div>
-            )}
-        </div>
-    )
-}
-
-// ─── Checklists bar chart ─────────────────────────────────────────────────────
-
-function EstadoChecklistChart({ data, loading }: {
-    data?: { sinChecklist: number; revisionPendiente: number; enProgreso: number; completos: number; sinFotos: number }
-    loading: boolean
-}) {
-    const chartData = [
-        { name: 'Sin revisión',  value: data?.sinChecklist ?? 0, color: '#e5e7eb' },
-        { name: 'Pendiente',     value: data?.revisionPendiente ?? 0, color: '#fb923c' },
-        { name: 'Abierta',       value: data?.enProgreso   ?? 0, color: '#fbbf24' },
-        { name: 'Al día',        value: data?.completos    ?? 0, color: '#15803d' },
-        { name: 'Sin fotos',     value: data?.sinFotos     ?? 0, color: '#dc2626' },
-    ]
-
-    return (
-        <div className="bg-white rounded-xl border border-gray-100 p-5">
-            <p className="text-xs text-gray-400 font-medium uppercase tracking-wide mb-4">
-                Última revisión por unidad
-            </p>
-            {loading ? (
-                <Skeleton className="h-40 w-full" />
-            ) : (
-                <>
-                    <ResponsiveContainer width="100%" height={160}>
-                        <BarChart data={chartData} barSize={36}>
-                            <XAxis
-                                dataKey="name"
-                                tick={{ fontSize: 11, fill: '#9ca3af' }}
-                                axisLine={false}
-                                tickLine={false}
-                            />
-                            <YAxis hide />
-                            <Tooltip
-                                cursor={{ fill: '#f9fafb' }}
-                                contentStyle={{
-                                    fontSize: 12,
-                                    borderRadius: 8,
-                                    border: '1px solid #e5e7eb',
-                                    boxShadow: '0 1px 4px rgba(0,0,0,.06)'
-                                }}
-                            />
-                            <Bar dataKey="value" radius={[4, 4, 0, 0]}>
-                                {chartData.map((entry) => (
-                                    <Cell key={entry.name} fill={entry.color} />
-                                ))}
-                            </Bar>
-                        </BarChart>
-                    </ResponsiveContainer>
-                    {/* Leyenda */}
-                    <div className="flex flex-wrap gap-x-4 gap-y-1.5 mt-3">
-                        {chartData.map((item) => (
-                            <span key={item.name} className="flex items-center gap-1.5 text-xs text-gray-500">
-                                <span className="w-2.5 h-2.5 rounded-sm inline-block" style={{ background: item.color }} />
-                                {item.name}
-                            </span>
-                        ))}
-                    </div>
-                </>
-            )}
-        </div>
-    )
-}
-
-// ─── Tabla unidades críticas ──────────────────────────────────────────────────
-
-function EstadoInspeccionesChart({ data, loading }: { data?: InspeccionKpis; loading: boolean }) {
-    const chartData = [
-        { name: 'Abiertas',    value: data?.enProgreso ?? 0, color: '#fbbf24' },
-        { name: 'Sin fotos',   value: data?.fotosPendientes ?? 0, color: '#dc2626' },
-        { name: 'Completas',   value: data?.completas ?? 0, color: '#15803d' },
-    ]
-
-    return (
-        <div className="bg-white rounded-xl border border-gray-100 p-5">
-            <p className="text-xs text-gray-400 font-medium uppercase tracking-wide mb-4">
-                Estatus de inspecciones
-            </p>
-            {loading ? (
-                <Skeleton className="h-40 w-full" />
-            ) : (
-                <>
-                    <ResponsiveContainer width="100%" height={160}>
-                        <BarChart data={chartData} barSize={36}>
-                            <XAxis
-                                dataKey="name"
-                                tick={{ fontSize: 11, fill: '#9ca3af' }}
-                                axisLine={false}
-                                tickLine={false}
-                            />
-                            <YAxis hide />
-                            <Tooltip
-                                cursor={{ fill: '#f9fafb' }}
-                                contentStyle={{
-                                    fontSize: 12,
-                                    borderRadius: 8,
-                                    border: '1px solid #e5e7eb',
-                                    boxShadow: '0 1px 4px rgba(0,0,0,.06)'
-                                }}
-                            />
-                            <Bar dataKey="value" radius={[4, 4, 0, 0]}>
-                                {chartData.map((entry) => (
-                                    <Cell key={entry.name} fill={entry.color} />
-                                ))}
-                            </Bar>
-                        </BarChart>
-                    </ResponsiveContainer>
-                    <div className="space-y-3 mt-3">
-                        {data?.porTipo.map((item) => (
-                            <div key={item.tipo} className="flex items-center justify-between text-xs">
-                                <span className="text-gray-500">{inspeccionTipoLabel(item.tipo)}</span>
-                                <span className="font-medium text-gray-900">{item.completas} de {item.total} completas</span>
-                            </div>
-                        ))}
-                    </div>
-                </>
-            )}
-        </div>
-    )
-}
-
-function UnidadesCriticasTable() {
-    const [page, setPage] = useState(1);
-    const { data: response, isLoading} = useUnidadesCriticas(page);
-    const criticas = response?.data;
-    const meta = response?.meta;
-    const totalPages = meta?.totalPages ?? 1;
-
-    return (
-        <div className=' bg-white rounded-xl border border-gray-100 overflow-hidden'>
-            <div className='px-5 py-4 border-b border-gray-100 flex items-center justify-between'>
-                <div>
-                    <p className=' text-sm font-medium text-gray-900'>Unidades Criticas</p>
-                    <p className=' text-xs text-gray-400 mt-0.5'>Sin revisión o más de 30 días desde asignación o inspección</p>
-                </div>
-                {meta && (
-                    <span className=' text-xs font-medium bg-red-50 text-red-600 px-2.5 py-1 rounded-full'>
-                        {meta.total} unidades
-                    </span>
-                )}
-            </div>
-            {isLoading ? (
-                <div className=' p-5 space-y-3'>
-                    {[...Array(4)].map((_, i) => <Skeleton key={i} className='h-10 w-full' />)}
-                </div>
-            ) : !criticas?.length ? (
-                <div className=' flex flex-col items-center justify-center py-12 text-gray-400'>
-                    <svg className="w-8 h-8 mb-2 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" />
-                    </svg>
-                    <p className="text-sm">Todas las unidades al día</p>
-                </div>
-            ) : (
-                <div className=' overflow-x-auto'>
-                    <table className=' w-full text-sm'>
-                        <thead>
-                            <tr className="text-left">
-                                <th className="px-5 py-3 text-xs font-medium text-gray-400 uppercase tracking-wide">Unidad</th>
-                                <th className="px-5 py-3 text-xs font-medium text-gray-400 uppercase tracking-wide">Tipo</th>
-                                <th className="px-5 py-3 text-xs font-medium text-gray-400 uppercase tracking-wide">Placas</th>
-                                <th className="px-5 py-3 text-xs font-medium text-gray-400 uppercase tracking-wide">Motivo</th>
-                                <th className="px-5 py-3 text-xs font-medium text-gray-400 uppercase tracking-wide">Origen</th>
-                                <th className="px-5 py-3 text-xs font-medium text-gray-400 uppercase tracking-wide">Estado</th>
-                                <th className="px-5 py-3 text-xs font-medium text-gray-400 uppercase tracking-wide">Última revisión</th>
-                            </tr>
-                        </thead>
-                        <tbody className=' divide-y divide-gray-50'>
-                            {criticas.map((u) => (
-                                <tr key={u.id} className="hover:bg-gray-50 transition-colors">
-                                    <td className="px-5 py-3.5 font-medium text-gray-900">{u.no_unidad}</td>
-                                    <td className="px-5 py-3.5 text-gray-600 capitalize">{u.tipo_unidad.toLowerCase()}</td>
-                                    <td className="px-5 py-3.5 text-gray-500 font-mono text-xs">{u.u_placas}</td>
-                                    <td className="px-5 py-3.5">
-                                        <span className={`text-xs font-medium px-2.5 py-1 rounded-full ${
-                                            u.motivo === 'sin_checklist'
-                                                ? 'bg-gray-100 text-gray-700'
-                                                : 'bg-amber-50 text-amber-700'
-                                        }`}>
-                                            {motivoLabel(u.motivo)}
-                                        </span>
-                                    </td>
-                                    <td className="px-5 py-3.5 text-gray-500 text-xs">
-                                        {origenRevisionLabel(u.origenUltimaRevision)}
-                                    </td>
-                                    <td className="px-5 py-3.5">
-                                        {estadoRevisionBadge(u.estadoUltimaRevision)}
-                                    </td>
-                                    <td className="px-5 py-3.5 text-gray-500 text-xs">
-                                        {u.ultimoChecklist
-                                            ? <>
-                                                <span className="text-gray-700 font-medium">{diasDesde(u.ultimoChecklist)}</span>
-                                                <span className="block text-gray-400">{formatDate(u.ultimoChecklist)}</span>
-                                            </>
-                                            : <span className="text-red-500 font-medium">Nunca revisada</span>
-                                        }
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                    {totalPages > 1 && (
-                        <div className=' flex items-center justify-between px-5 py-3 border-t border-gray-100'>
-                            <p className=' text-xs text-gray-400'>
-                                Página {meta?.page} de {totalPages}
-                            </p>
-                            <div className='flex gap-1'>
-                                <button
-                                    onClick={() => setPage(p => Math.max(1, p - 1))}
-                                    disabled={page === 1}
-                                    className=' px-3 py-1.5 text-xs rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors'
-                                >
-                                    Anterior
-                                </button>
-                                <button
-                                    onClick={() => setPage(p => Math.min(totalPages, p + 1))}
-                                    disabled={page === totalPages}
-                                    className=' px-3 py-1.5 text-xs rounded-lg border border-gray-200 text-gray-600 hover:bg-gray-50 disabled:opacity-40 disabled:cursor-not-allowed transition-colors'
-                                >
-                                    Siguiente
-                                </button>
-                            </div>
-                        </div>
-                    )}
-                </div>
-            )}
-        </div>
-    )
-}
-
-// ─── Tabla sin fotografías ────────────────────────────────────────────────────
-
-function SinFotografiasTable({ data, loading }: { data?: ChecklistSinFotos[]; loading: boolean }) {
-    return (
-        <div className="bg-white rounded-xl border border-gray-100 overflow-hidden">
-            <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
-                <div>
-                    <p className="text-sm font-medium text-gray-900">Checklists sin fotografías</p>
-                    <p className="text-xs text-gray-400 mt-0.5">Checklist completo pero fotos pendientes de subir</p>
-                </div>
-                {data && data.length > 0 && (
-                    <span className="text-xs font-medium bg-red-50 text-red-600 px-2.5 py-1 rounded-full">
-                        {data.length} pendientes
-                    </span>
-                )}
-            </div>
-
-            {loading ? (
-                <div className="p-5 space-y-3">
-                    {[...Array(3)].map((_, i) => <Skeleton key={i} className="h-10 w-full" />)}
-                </div>
-            ) : !data?.length ? (
-                <div className="flex flex-col items-center justify-center py-12 text-gray-400">
-                    <svg className="w-8 h-8 mb-2 text-gray-300" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M4 16l4.586-4.586a2 2 0 012.828 0L16 16m-2-2l1.586-1.586a2 2 0 012.828 0L20 14m-6-6h.01M6 20h12a2 2 0 002-2V6a2 2 0 00-2-2H6a2 2 0 00-2 2v12a2 2 0 002 2z" />
-                    </svg>
-                    <p className="text-sm">Todos los checklists tienen fotografías</p>
-                </div>
-            ) : (
-                <div className="overflow-x-auto">
-                    <table className="w-full text-sm">
-                        <thead>
-                            <tr className="text-left">
-                                <th className="px-5 py-3 text-xs font-medium text-gray-400 uppercase tracking-wide">Unidad</th>
-                                <th className="px-5 py-3 text-xs font-medium text-gray-400 uppercase tracking-wide">Tipo</th>
-                                <th className="px-5 py-3 text-xs font-medium text-gray-400 uppercase tracking-wide">Placas</th>
-                                <th className="px-5 py-3 text-xs font-medium text-gray-400 uppercase tracking-wide">Fecha checklist</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-gray-50">
-                            {data.map((c) => (
-                                <tr key={c.checklistId} className="hover:bg-gray-50 transition-colors">
-                                    <td className="px-5 py-3.5 font-medium text-gray-900">{c.unidad.no_unidad ?? '—'}</td>
-                                    <td className="px-5 py-3.5 text-gray-600 capitalize">{c.unidad.tipo_unidad?.toLowerCase() ?? '—'}</td>
-                                    <td className="px-5 py-3.5 text-gray-500">{c.unidad.u_placas ?? '—'}</td>
-                                    <td className="px-5 py-3.5 text-gray-500">{formatDate(c.fechaChecklist)}</td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                </div>
-            )}
-        </div>
-    )
-}
-
-// ─── Vista principal ──────────────────────────────────────────────────────────
-
-function colorDiasEnRuta(dias: number) {
-    if (dias >= 4) return 'bg-red-50 text-red-600'
-    if (dias >= 2) return 'bg-amber-50 text-amber-700'
-    return 'bg-gray-100 text-gray-600'
-}
-
-function AsignacionesEnRutaTable({ data, loading }: { data?: AsignacionEnRutaItem[]; loading: boolean }) {
-    return (
-        <div className="bg-white rounded-xl border border-gray-100 overflow-hidden">
-            <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
-                <div>
-                    <p className="text-sm font-medium text-gray-900">Asignaciones en ruta</p>
-                    <p className="text-xs text-gray-400 mt-0.5">Unidades con estatus EN_RUTA</p>
-                </div>
-                {data && data.length > 0 && (
-                    <span className="text-xs font-medium bg-blue-50 text-blue-700 px-2.5 py-1 rounded-full">
-                        {data.length} en ruta
-                    </span>
-                )}
-            </div>
-
-            {loading ? (
-                <div className="p-5 space-y-3">
-                    {[...Array(3)].map((_, i) => <Skeleton key={i} className="h-10 w-full" />)}
-                </div>
-            ) : !data?.length ? (
-                <div className="flex flex-col items-center justify-center py-12 text-gray-400">
-                    <p className="text-sm">No hay asignaciones en ruta</p>
-                </div>
-            ) : (
-                <div className="overflow-x-auto">
-                    <table className="w-full text-sm">
-                        <thead>
-                            <tr className="text-left">
-                                 <th className="px-5 py-3 text-xs font-medium text-gray-400 uppercase tracking-wide">Unidad</th>
-                                <th className="px-5 py-3 text-xs font-medium text-gray-400 uppercase tracking-wide">Tipo</th>
-                                <th className="px-5 py-3 text-xs font-medium text-gray-400 uppercase tracking-wide">Placas</th>
-                                <th className="px-5 py-3 text-xs font-medium text-gray-400 uppercase tracking-wide">Operador</th>
-                                <th className="px-5 py-3 text-xs font-medium text-gray-400 uppercase tracking-wide">Caja</th>
-                                <th className="px-5 py-3 text-xs font-medium text-gray-400 uppercase tracking-wide">En ruta desde</th>
-                                <th className="px-5 py-3 text-xs font-medium text-gray-400 uppercase tracking-wide">Días</th>
-                            </tr>
-                        </thead>
-                        <tbody className="divide-y divide-gray-50">
-                            {data.map((asignacion) => (
-                                 <tr key={asignacion.id} className="hover:bg-gray-50 transition-colors">
-                                    <td className="px-5 py-3.5 font-medium text-gray-900">{asignacion.unidad.no_unidad}</td>
-                                    <td className="px-5 py-3.5 text-gray-600 capitalize">{asignacion.unidad.tipo_unidad.toLowerCase()}</td>
-                                    <td className="px-5 py-3.5 text-gray-500">{asignacion.unidad.u_placas}</td>
-                                    <td className="px-5 py-3.5 text-gray-500">{operadorNombre(asignacion.operador)}</td>
-                                    <td className="px-5 py-3.5 text-xs">
-                                        {asignacion.caja
-                                            ? <>
-                                                <span className="text-gray-700 font-medium">
-                                                    {asignacion.caja.numero_caja ?? '—'}
-                                                </span>
-                                                <span className="block text-gray-400">{asignacion.caja.c_placas ?? ''}</span>
-                                            </>
-                                            : <span className="text-gray-300">—</span>
-                                        }
-                                    </td>
-                                    <td className="px-5 py-3.5 text-xs text-gray-400">{formatDate(asignacion.createdAt)}</td>
-                                    <td className="px-5 py-3.5">
-                                        <span className={`text-xs font-semibold px-2.5 py-1 rounded-full ${colorDiasEnRuta(asignacion.diasEnRuta)}`}>
-                                            {asignacion.diasEnRuta === 0 ? 'Hoy' : `${asignacion.diasEnRuta} día${asignacion.diasEnRuta !== 1 ? 's' : ''}`}
-                                        </span>
-                                    </td>
-                                </tr>
-                            ))}
-                        </tbody>
-                    </table>
-                </div>
-            )}
-        </div>
-    )
-}
-
-export default function KpiDashboardView() {
-    const { data: kpis,          isLoading: loadingKpis          } = useKpisResumen()
-    const { data: inspecciones,  isLoading: loadingInspecciones  } = useKpisInspecciones()
-    const { data: enRuta,        isLoading: loadingEnRuta        } = useAsignacionesEnRuta()
-    const { data: sinFotos,      isLoading: loadingSinFotos      } = useSinFotografias()
-    const unidadesConRevision = kpis ? kpis.totalUnidades - kpis.sinChecklist : undefined
-
-    return (
-        <div className="space-y-6">
-
-            {/* Header */}
-            <div>
-                <h1 className="text-2xl font-medium text-gray-900">Dashboard de KPIs</h1>
-                <p className="text-sm text-gray-500 mt-0.5">Estado general de revisiones, asignaciones e inspecciones</p>
-            </div>
-
-            {/* Cobertura de unidades */}
-            <div>
-                <p className="text-sm font-medium text-gray-900 mb-3">Cobertura de unidades</p>
-                <div className="grid grid-cols-2 md:grid-cols-3 xl:grid-cols-5 gap-4">
-                    <MetricCard
-                        label="Total unidades"
-                        value={kpis?.totalUnidades}
-                        loading={loadingKpis}
-                    />
-                    <MetricCard
-                        label="Con revisión"
-                        value={unidadesConRevision}
-                        accent="info"
-                        sub="Asignación o inspección"
-                        loading={loadingKpis}
-                    />
-                    <MetricCard
-                        label="Al día"
-                        value={kpis?.completos}
-                        accent="ok"
-                        sub="Última revisión completa"
-                        loading={loadingKpis}
-                    />
-                    <MetricCard
-                        label="Sin revisión"
-                        value={kpis?.sinChecklist}
-                        accent="danger"
-                        sub="Sin asignación ni inspección"
-                        loading={loadingKpis}
-                    />
-                    <MetricCard
-                        label="En ruta"
-                        value={kpis?.enRuta}
-                        accent="info"
-                        sub="Asignaciones activas"
-                        loading={loadingKpis}
-                    />
-                </div>
-            </div>
-
-            {/* Cobertura de remolques ← nueva sección */}
-            <div>
-                <p className="text-sm font-medium text-gray-900 mb-3">Cobertura de remolques</p>
-                <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
-                    <MetricCard
-                        label="Total remolques"
-                        value={inspecciones?.cajas?.total}
-                        loading={loadingInspecciones}
-                    />
-                    <MetricCard
-                        label="Con inspección"
-                        value={inspecciones?.cajas?.conInspeccion}
-                        accent={
-                            !inspecciones?.cajas ? 'default' :
-                            inspecciones.cajas.porcentaje >= 80 ? 'ok' :
-                            inspecciones.cajas.porcentaje >= 40 ? 'warn' : 'danger'
-                        }
-                        sub={`${inspecciones?.cajas?.porcentaje ?? 0}% del total`}
-                        loading={loadingInspecciones}
-                    />
-                    <MetricCard
-                        label="Sin inspección"
-                        value={inspecciones?.cajas?.sinInspeccion}
-                        accent={
-                            !inspecciones?.cajas ? 'default' :
-                            inspecciones.cajas.sinInspeccion === 0 ? 'ok' :
-                            inspecciones.cajas.sinInspeccion <= 5 ? 'warn' : 'danger'
-                        }
-                        sub="Sin inspección de patio"
-                        loading={loadingInspecciones}
-                    />
-                </div>
-            </div>
-
-            {/* Última revisión de unidades */}
-            <div>
-                <p className="text-sm font-medium text-gray-900 mb-3">Última revisión de unidades</p>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                    <MetricCard
-                        label="+30 días"
-                        value={kpis?.mas30dias}
-                        accent="warn"
-                        sub="Sin revisión reciente"
-                        loading={loadingKpis}
-                    />
-                    <MetricCard
-                        label="Pendiente"
-                        value={kpis?.revisionPendiente}
-                        accent="warn"
-                        sub="Asignación sin checklist"
-                        loading={loadingKpis}
-                    />
-                    <MetricCard
-                        label="Abierta"
-                        value={kpis?.enProgreso}
-                        accent="info"
-                        sub="Checklist o inspección"
-                        loading={loadingKpis}
-                    />
-                    <MetricCard
-                        label="Fotos pendientes"
-                        value={kpis?.sinFotos}
-                        accent="danger"
-                        sub="Última revisión"
-                        loading={loadingKpis}
-                    />
-                </div>
-            </div>
-
-            {/* Gráficas */}
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                <CompletitudChart
-                    data={kpis?.completitudPorTipo}
-                    cajas={inspecciones?.cajas}   // ← agregar
-                    loading={loadingKpis || loadingInspecciones}
-                />
-                <EstadoChecklistChart
-                    data={kpis}
-                    loading={loadingKpis}
-                />
-            </div>
-
-            <div>
-                <p className="text-sm font-medium text-gray-900 mb-3">Actividad de inspecciones</p>
-                <div className="grid grid-cols-2 md:grid-cols-5 gap-4 mb-4"> {/* cambiar md:grid-cols-4 → 5 */}
-                    <MetricCard
-                        label="Inspecciones"
-                        value={inspecciones?.total}
-                        loading={loadingInspecciones}
-                    />
-                    <MetricCard
-                        label="Abiertas"
-                        value={inspecciones?.enProgreso}
-                        accent="info"
-                        loading={loadingInspecciones}
-                    />
-                    <MetricCard
-                        label="Fotos pendientes"
-                        value={inspecciones?.fotosPendientes}
-                        accent="danger"
-                        loading={loadingInspecciones}
-                    />
-                    <MetricCard
-                        label="Cerradas"
-                        value={inspecciones?.completas}
-                        accent="ok"
-                        loading={loadingInspecciones}
-                    />
-                    {/* ← Nueva card */}
-                    <MetricCard
-                        label="Cajas con inspección"
-                        value={inspecciones?.cajas?.conInspeccion}
-                        sub={`de ${inspecciones?.cajas?.total ?? '—'} activas · ${inspecciones?.cajas?.porcentaje ?? 0}%`}
-                        accent={
-                            !inspecciones?.cajas ? 'default' :
-                            inspecciones.cajas.porcentaje >= 80 ? 'ok' :
-                            inspecciones.cajas.porcentaje >= 40 ? 'warn' : 'danger'
-                        }
-                        loading={loadingInspecciones}
-                    />
-                </div>
-                <EstadoInspeccionesChart
-                    data={inspecciones}
-                    loading={loadingInspecciones}
-                />
-            </div>
-
-            {/* Tablas */}
-            <AsignacionesEnRutaTable data={enRuta?.asignaciones} loading={loadingEnRuta} />
-            <UnidadesCriticasTable />
-            <SinFotografiasTable   data={sinFotos}  loading={loadingSinFotos} />
-
-        </div>
-    )
+        TRACTOCAMION: "Tractocamión",
+        MUDANCERO: "Mudancero",
+        CAMIONETA: "Camioneta",
+        tractocamion: "Tractocamión",
+        mudancero: "Mudancero",
+        camioneta: "Camioneta",
+    };
+    return map[tipo] ?? tipo;
 }
